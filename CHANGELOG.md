@@ -6,6 +6,7 @@ All notable changes to PressCare AI Error Doctor are documented here.
 
 - Added recent, historical, and undated event classification with human-readable date guidance.
 - Redacted database names, table identifiers, and database users before storage, export, or optional AI use.
+- Automatically re-sanitized reports saved by earlier versions before display, export, or optional AI use.
 - Added regression coverage for the expanded privacy boundary.
 - Clarified provider readiness, consent, and possible provider charges.
 - Added a hard output-token limit and tighter response schema for predictable AI usage.

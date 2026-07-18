@@ -106,6 +106,7 @@ The complete source code, build script, automated tests, and development documen
 
 * Added recent-versus-historical event counts and clear date-range guidance.
 * Expanded privacy redaction to remove database names, table identifiers, and database users.
+* Added automatic re-sanitization for reports saved by earlier plugin versions.
 * Added clearer AI provider readiness, consent, and possible-cost messaging.
 * Added a hard output-token limit for more predictable optional AI costs.
 * Refreshed the admin experience with professional PressCare AI branding and a friendlier diagnostic workflow.

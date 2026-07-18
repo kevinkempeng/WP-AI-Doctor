@@ -40,7 +40,7 @@ final class Plugin {
 			$redactor
 		);
 
-		$admin = new AdminPage( $engine, new Analyzer( $redactor ) );
+		$admin = new AdminPage( $engine, new Analyzer( $redactor ), $redactor );
 		$admin->register_hooks();
 
 		$policy = new Policy();

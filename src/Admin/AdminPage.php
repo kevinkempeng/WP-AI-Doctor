@@ -11,6 +11,7 @@ namespace PressCare\AIErrorDoctor\Admin;
 
 use PressCare\AIErrorDoctor\AI\Analyzer;
 use PressCare\AIErrorDoctor\Diagnostics\DiagnosticEngine;
+use PressCare\AIErrorDoctor\Privacy\Redactor;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -23,10 +24,12 @@ final class AdminPage {
 
 	private DiagnosticEngine $engine;
 	private Analyzer $analyzer;
+	private Redactor $redactor;
 
-	public function __construct( DiagnosticEngine $engine, Analyzer $analyzer ) {
+	public function __construct( DiagnosticEngine $engine, Analyzer $analyzer, Redactor $redactor ) {
 		$this->engine   = $engine;
 		$this->analyzer = $analyzer;
+		$this->redactor = $redactor;
 	}
 
 	public function register_hooks(): void {
@@ -69,8 +72,8 @@ final class AdminPage {
 			delete_transient( 'pcaied_notice_' . $user_id );
 		}
 
-		$report    = is_array( $report ) ? $report : array();
-		$ai_report = is_array( $ai_report ) ? $ai_report : array();
+		$report    = is_array( $report ) ? $this->sanitize_saved_report( $report, self::REPORT_META ) : array();
+		$ai_report = is_array( $ai_report ) ? $this->sanitize_saved_report( $ai_report, self::AI_META ) : array();
 		?>
 		<div class="wrap pcaied-wrap">
 			<section class="pcaied-hero">
@@ -166,6 +169,7 @@ final class AdminPage {
 		if ( ! is_array( $report ) || ! $report ) {
 			$this->redirect_with_notice( 'error', __( 'Run a local scan before requesting AI analysis.', 'presscare-ai-error-doctor' ) );
 		}
+		$report = $this->sanitize_saved_report( $report, self::REPORT_META );
 
 		$analysis = $this->analyzer->analyze( $report );
 		if ( is_wp_error( $analysis ) ) {
@@ -192,6 +196,7 @@ final class AdminPage {
 		if ( ! is_array( $report ) || ! $report ) {
 			$this->redirect_with_notice( 'error', __( 'There is no diagnostic report to export.', 'presscare-ai-error-doctor' ) );
 		}
+		$report = $this->sanitize_saved_report( $report, self::REPORT_META );
 
 		nocache_headers();
 		header( 'Content-Type: application/json; charset=utf-8' );
@@ -499,6 +504,24 @@ final class AdminPage {
 			<button type="submit" class="<?php echo esc_attr( $css_class ); ?>"><?php echo esc_html( $label ); ?></button>
 		</form>
 		<?php
+	}
+
+	/**
+	 * Applies the current privacy rules to reports saved by earlier versions.
+	 *
+	 * @param array<string,mixed> $report   Saved report.
+	 * @param string              $meta_key User-meta key.
+	 * @return array<string,mixed>
+	 */
+	private function sanitize_saved_report( array $report, string $meta_key ): array {
+		$sanitized = $this->redactor->redact_value( $report );
+		$sanitized = is_array( $sanitized ) ? $sanitized : array();
+
+		if ( $sanitized !== $report ) {
+			update_user_meta( get_current_user_id(), $meta_key, $sanitized );
+		}
+
+		return $sanitized;
 	}
 
 	private function authorize(): void {
