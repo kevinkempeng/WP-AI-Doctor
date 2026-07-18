@@ -18,6 +18,9 @@ final class Redactor {
 		$value = $this->redact_paths( $value );
 
 		$patterns = array(
+			'/(\btable\s+)[\'\x60][^\'\x60\r\n]+[\'\x60]/i' => '$1[database-table-redacted]',
+			'/(\bdatabase\s+)[\'\x60][^\'\x60\r\n]+[\'\x60]/i' => '$1[database-name-redacted]',
+			'/(\bfor user\s+)[\'\x60][^\'\x60\r\n]+[\'\x60](?:@[\'\x60][^\'\x60\r\n]+[\'\x60])?/i' => '$1[database-user-redacted]',
 			'/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/i'          => 'Bearer [redacted]',
 			'/\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{16,}\b/'   => '[api-key-redacted]',
 			'/\bAIza[0-9A-Za-z_-]{20,}\b/'                 => '[api-key-redacted]',
@@ -76,12 +79,12 @@ final class Redactor {
 		}
 
 		$normalized = preg_replace(
-			'#(?<![A-Za-z0-9])/(?:home|var|srv|opt|usr|Users|Volumes|mnt|tmp)/(?:[^\s\'\"]+/)*[^\s\'\"]+#',
+			'#(?<![A-Za-z0-9])/(?:home|var|srv|opt|usr|Users|Volumes|mnt|tmp)/(?:[^\s\'"]+/)*[^\s\'"]+#',
 			'[filesystem-path]',
 			$normalized
 		) ?? $normalized;
 		$normalized = preg_replace(
-			'#\b[A-Za-z]:/(?:[^\s\'\"]+/)*[^\s\'\"]+#',
+			'#\b[A-Za-z]:/(?:[^\s\'"]+/)*[^\s\'"]+#',
 			'[filesystem-path]',
 			$normalized
 		) ?? $normalized;

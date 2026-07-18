@@ -19,6 +19,9 @@ final class RedactorTest extends TestCase {
 				'https://example.test/account',
 				'admin@example.test',
 				'192.0.2.44',
+				"Table 'private_database.wp_customer_records' does not exist",
+				"Unknown database 'private_database'",
+				"Access denied for user 'private_user'@'private-host'",
 				'Authorization: Bearer secret-token-value',
 				'api_key=sk-proj-abcdefghijklmnopqrstuvwxyz',
 			)
@@ -30,8 +33,13 @@ final class RedactorTest extends TestCase {
 		self::assertStringContainsString( '[site-url]/account', $output );
 		self::assertStringContainsString( '[email-redacted]', $output );
 		self::assertStringContainsString( '[ip-redacted]', $output );
+		self::assertStringContainsString( '[database-table-redacted]', $output );
+		self::assertStringContainsString( '[database-name-redacted]', $output );
+		self::assertStringContainsString( '[database-user-redacted]', $output );
+		self::assertStringNotContainsString( 'private_database', $output );
+		self::assertStringNotContainsString( 'private_user', $output );
+		self::assertStringNotContainsString( 'private-host', $output );
 		self::assertStringNotContainsString( 'secret-token-value', $output );
 		self::assertStringNotContainsString( 'abcdefghijklmnopqrstuvwxyz', $output );
 	}
 }
-

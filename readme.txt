@@ -3,7 +3,7 @@ Tags: ai, debug, diagnostics, error log, site health
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,8 +17,9 @@ The local diagnostic engine:
 
 * Reads no more than the final 2 MB of a configured log.
 * Groups repeated PHP and WordPress errors by fingerprint.
+* Separates activity from the last seven days from older log history.
 * Identifies likely plugin, theme, or WordPress core ownership from file paths.
-* Removes common filesystem paths, site URLs, email addresses, IP addresses, access tokens, API keys, and other secrets.
+* Removes common filesystem paths, site URLs, database identifiers, email addresses, IP addresses, access tokens, API keys, and other secrets.
 * Stores only sanitized grouped samples for the current administrator.
 * Makes no changes to the site, its code, or its configuration.
 
@@ -73,6 +74,10 @@ No. The plugin is read-only. It reads a bounded section of a log, creates a sani
 
 No. Local parsing, grouping, redaction, component detection, JSON export, and reporting work without an AI provider.
 
+= Does the optional AI explanation cost money? =
+
+Possibly. Local diagnostics are free. A connected AI provider may charge the site owner for an approved AI request according to that provider's pricing and account settings.
+
 = Where do I enter an API key? =
 
 PressCare AI Error Doctor does not store provider credentials. WordPress 7.0 manages provider plugins and API keys under Settings > Connectors.
@@ -96,6 +101,14 @@ After the plugin is listed, use its WordPress.org support forum for ordinary sup
 The complete source code, build script, automated tests, and development documentation are maintained at https://github.com/kevinkempeng/WP-AI-Doctor.
 
 == Changelog ==
+
+= 1.0.1 =
+
+* Added recent-versus-historical event counts and clear date-range guidance.
+* Expanded privacy redaction to remove database names, table identifiers, and database users.
+* Added clearer AI provider readiness, consent, and possible-cost messaging.
+* Added a hard output-token limit for more predictable optional AI costs.
+* Refreshed the admin experience with professional PressCare AI branding and a friendlier diagnostic workflow.
 
 = 1.0.0 =
 

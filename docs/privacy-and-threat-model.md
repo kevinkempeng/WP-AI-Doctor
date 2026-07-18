@@ -4,12 +4,13 @@
 
 - Filesystem paths and account names embedded in paths.
 - Site URLs.
+- Database names, table identifiers, and database users.
 - Email and IP addresses.
 - AI, bearer, and access tokens.
 - Passwords and values labeled as keys, secrets, authentication, or authorization data.
 - Raw error-log content.
 
-## Controls in version 1.0.0
+## Controls in version 1.0.1
 
 - Reads no more than 2 MB from the end of a local file.
 - Never accepts a log path from an HTTP request.
@@ -18,6 +19,7 @@
 - Stores a maximum of 25 grouped findings with samples capped at 2,000 characters and eight lines.
 - Redacts samples before persistent storage.
 - Replaces database query bodies before a database-error sample is stored.
+- Replaces database names, table identifiers, and database users with explicit redaction markers.
 - Stores only the log filename, never its full path.
 - Re-runs redaction after the diagnostic extension filter.
 - Requires explicit consent for every AI request.

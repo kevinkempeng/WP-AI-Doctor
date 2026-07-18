@@ -17,6 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class DiagnosticEngine {
+	private const RECENT_WINDOW_DAYS = 7;
+
 	private LogLocator $locator;
 	private LogParser $parser;
 	private Redactor $redactor;
@@ -41,8 +43,10 @@ final class DiagnosticEngine {
 			return $tail;
 		}
 
-		$parsed = $this->parser->parse( $tail['content'] );
-		$report = array(
+		$recent_after = time() - ( self::RECENT_WINDOW_DAYS * 86400 );
+		$parsed       = $this->parser->parse( $tail['content'], $recent_after );
+		$recency      = $parsed['recency'];
+		$report       = array(
 			'report_id'    => wp_generate_uuid4(),
 			'generated_at' => gmdate( DATE_ATOM ),
 			'environment'  => $this->environment(),
@@ -55,9 +59,15 @@ final class DiagnosticEngine {
 				'modified_at' => $tail['modified_at'] > 0 ? gmdate( DATE_ATOM, $tail['modified_at'] ) : null,
 			),
 			'summary'      => array(
-				'events_total' => $parsed['events_total'],
-				'groups_total' => count( $parsed['groups'] ),
-				'counts'       => $parsed['counts'],
+				'events_total'            => $parsed['events_total'],
+				'groups_total'            => count( $parsed['groups'] ),
+				'counts'                  => $parsed['counts'],
+				'recency_window_days'     => self::RECENT_WINDOW_DAYS,
+				'recent_events_total'     => $recency['recent'],
+				'historical_events_total' => $recency['historical'],
+				'undated_events_total'    => $recency['undated'],
+				'oldest_seen'             => $recency['oldest_seen'],
+				'newest_seen'             => $recency['newest_seen'],
 			),
 			'groups'       => $parsed['groups'],
 		);

@@ -26,7 +26,7 @@ final class LogParserTest extends TestCase {
 			)
 		);
 
-		$result = ( new LogParser( new Redactor() ) )->parse( $log );
+		$result = ( new LogParser( new Redactor() ) )->parse( $log, (int) strtotime( '12-Jul-2026 00:00:00 UTC' ) );
 
 		self::assertSame( 3, $result['events_total'] );
 		self::assertSame( 2, count( $result['groups'] ) );
@@ -36,7 +36,27 @@ final class LogParserTest extends TestCase {
 		self::assertSame( 'sample-theme', $result['groups'][0]['component_slug'] );
 		self::assertSame( 'plugin', $result['groups'][1]['component_type'] );
 		self::assertSame( 2, $result['groups'][1]['count'] );
+		self::assertSame( 3, $result['recency']['recent'] );
+		self::assertSame( 0, $result['recency']['historical'] );
 		self::assertStringNotContainsString( '/var/www/example', $result['groups'][0]['sample'] );
 	}
-}
 
+	public function test_separates_recent_historical_and_undated_events(): void {
+		$log = implode(
+			"\n",
+			array(
+				'[18-Jul-2026 14:00:00 UTC] PHP Warning: Recent warning in /var/www/example/public/wp-content/plugins/recent-plugin/recent.php on line 10',
+				'[01-Jul-2026 14:00:00 UTC] PHP Warning: Historical warning in /var/www/example/public/wp-content/plugins/older-plugin/older.php on line 20',
+				'PHP Warning: Undated warning in /var/www/example/public/wp-content/plugins/undated-plugin/undated.php on line 30',
+			)
+		);
+
+		$result = ( new LogParser( new Redactor() ) )->parse( $log, (int) strtotime( '12-Jul-2026 00:00:00 UTC' ) );
+
+		self::assertSame( 1, $result['recency']['recent'] );
+		self::assertSame( 1, $result['recency']['historical'] );
+		self::assertSame( 1, $result['recency']['undated'] );
+		self::assertSame( (int) strtotime( '01-Jul-2026 14:00:00 UTC' ), $result['recency']['oldest_seen'] );
+		self::assertSame( (int) strtotime( '18-Jul-2026 14:00:00 UTC' ), $result['recency']['newest_seen'] );
+	}
+}

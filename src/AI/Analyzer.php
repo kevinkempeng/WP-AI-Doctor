@@ -18,6 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Analyzer {
+	private const MAX_OUTPUT_TOKENS = 6000;
+
 	private Redactor $redactor;
 
 	public function __construct( Redactor $redactor ) {
@@ -84,6 +86,7 @@ final class Analyzer {
 
 		try {
 			$result = wp_ai_client_prompt( $prompt )
+				->using_max_tokens( self::MAX_OUTPUT_TOKENS )
 				->as_json_response( $this->schema( $fingerprints ) )
 				->generate_text();
 		} catch ( Throwable ) {
@@ -169,14 +172,18 @@ final class Analyzer {
 			'type'                 => 'object',
 			'additionalProperties' => false,
 			'properties'           => array(
-				'summary'          => array( 'type' => 'string' ),
+				'summary'          => array(
+					'type'      => 'string',
+					'maxLength' => 1200,
+				),
 				'overall_severity' => array(
 					'type' => 'string',
 					'enum' => array( 'critical', 'error', 'warning', 'info', 'healthy' ),
 				),
 				'findings'         => array(
-					'type'  => 'array',
-					'items' => array(
+					'type'     => 'array',
+					'maxItems' => 25,
+					'items'    => array(
 						'type'                 => 'object',
 						'additionalProperties' => false,
 						'properties'           => array(
@@ -184,12 +191,25 @@ final class Analyzer {
 								'type' => 'string',
 								'enum' => $fingerprints,
 							),
-							'title'                   => array( 'type' => 'string' ),
-							'explanation'             => array( 'type' => 'string' ),
-							'likely_cause'            => array( 'type' => 'string' ),
+							'title'                   => array(
+								'type'      => 'string',
+								'maxLength' => 160,
+							),
+							'explanation'             => array(
+								'type'      => 'string',
+								'maxLength' => 900,
+							),
+							'likely_cause'            => array(
+								'type'      => 'string',
+								'maxLength' => 600,
+							),
 							'recommended_steps'       => array(
-								'type'  => 'array',
-								'items' => array( 'type' => 'string' ),
+								'type'     => 'array',
+								'maxItems' => 5,
+								'items'    => array(
+									'type'      => 'string',
+									'maxLength' => 300,
+								),
 							),
 							'confidence'              => array(
 								'type' => 'string',

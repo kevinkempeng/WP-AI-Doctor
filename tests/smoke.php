@@ -22,12 +22,14 @@ function pcaied_assert( bool $condition, string $message ): void {
 }
 
 $redactor = new Redactor();
-$private  = 'admin@example.test 192.0.2.44 /home/customer/private.php api_key=sk-proj-abcdefghijklmnopqrstuvwxyz';
+$private  = "admin@example.test 192.0.2.44 /home/customer/private.php Table 'private_database.wp_customer_records' api_key=sk-proj-abcdefghijklmnopqrstuvwxyz";
 $clean    = $redactor->redact( $private );
 
 pcaied_assert( ! str_contains( $clean, 'admin@example.test' ), 'Email address was not redacted.' );
 pcaied_assert( ! str_contains( $clean, '192.0.2.44' ), 'IP address was not redacted.' );
 pcaied_assert( ! str_contains( $clean, '/home/customer' ), 'Filesystem path was not redacted.' );
+pcaied_assert( ! str_contains( $clean, 'private_database' ), 'Database identifier was not redacted.' );
+pcaied_assert( str_contains( $clean, '[database-table-redacted]' ), 'Database table was not explicitly marked as redacted.' );
 pcaied_assert( ! str_contains( $clean, 'abcdefghijklmnopqrstuvwxyz' ), 'API key was not redacted.' );
 
 $log = implode(
@@ -58,4 +60,3 @@ pcaied_assert( ! str_contains( $samples, 'secret@example.test' ), 'A database qu
 pcaied_assert( str_contains( $samples, '[database-query-redacted]' ), 'Database query was not explicitly marked as redacted.' );
 
 echo "PressCare AI Error Doctor smoke tests passed.\n";
-

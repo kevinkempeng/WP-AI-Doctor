@@ -23,12 +23,15 @@ final class LogParser {
 	}
 
 	/**
-	 * @return array{events_total:int,groups:array<int,array<string,mixed>>,counts:array<string,int>}
+	 * @return array{events_total:int,groups:array<int,array<string,mixed>>,counts:array<string,int>,recency:array<string,int|null>}
 	 */
-	public function parse( string $content ): array {
-		$events = $this->extract_events( $content );
-		$groups = array();
-		$counts = array_fill_keys( array( 'critical', 'error', 'warning', 'info' ), 0 );
+	public function parse( string $content, ?int $recent_after = null ): array {
+		$events         = $this->extract_events( $content );
+		$groups         = array();
+		$counts         = array_fill_keys( array( 'critical', 'error', 'warning', 'info' ), 0 );
+		$recency_counts = array_fill_keys( array( 'recent', 'historical', 'undated' ), 0 );
+		$oldest_seen    = null;
+		$newest_seen    = null;
 
 		foreach ( $events as $event ) {
 			$severity    = $this->classify_severity( $event );
@@ -38,22 +41,30 @@ final class LogParser {
 			$timestamp   = $this->extract_timestamp( $event );
 
 			++$counts[ $severity ];
+			$recency = $this->classify_recency( $timestamp, $recent_after );
+			++$recency_counts[ $recency ];
 
 			if ( ! isset( $groups[ $fingerprint ] ) ) {
 				$groups[ $fingerprint ] = array(
-					'fingerprint'    => $fingerprint,
-					'severity'       => $severity,
-					'component_type' => $component['type'],
-					'component_slug' => $component['slug'],
-					'count'          => 0,
-					'first_seen'     => $timestamp,
-					'last_seen'      => $timestamp,
-					'sample'         => $this->redactor->redact( $this->limit_sample( $event ) ),
+					'fingerprint'      => $fingerprint,
+					'severity'         => $severity,
+					'component_type'   => $component['type'],
+					'component_slug'   => $component['slug'],
+					'count'            => 0,
+					'recent_count'     => 0,
+					'historical_count' => 0,
+					'undated_count'    => 0,
+					'first_seen'       => $timestamp,
+					'last_seen'        => $timestamp,
+					'sample'           => $this->redactor->redact( $this->limit_sample( $event ) ),
 				);
 			}
 
 			++$groups[ $fingerprint ]['count'];
+			++$groups[ $fingerprint ][ $recency . '_count' ];
 			if ( null !== $timestamp ) {
+				$oldest_seen                            = null === $oldest_seen ? $timestamp : min( $oldest_seen, $timestamp );
+				$newest_seen                            = null === $newest_seen ? $timestamp : max( $newest_seen, $timestamp );
 				$groups[ $fingerprint ]['last_seen']  ??= $timestamp;
 				$groups[ $fingerprint ]['first_seen'] ??= $timestamp;
 				if ( $timestamp > $groups[ $fingerprint ]['last_seen'] ) {
@@ -85,7 +96,22 @@ final class LogParser {
 			'events_total' => count( $events ),
 			'groups'       => array_slice( $groups, 0, 25 ),
 			'counts'       => $counts,
+			'recency'      => array(
+				'recent'      => $recency_counts['recent'],
+				'historical'  => $recency_counts['historical'],
+				'undated'     => $recency_counts['undated'],
+				'oldest_seen' => $oldest_seen,
+				'newest_seen' => $newest_seen,
+			),
 		);
+	}
+
+	private function classify_recency( ?int $timestamp, ?int $recent_after ): string {
+		if ( null === $timestamp || null === $recent_after ) {
+			return 'undated';
+		}
+
+		return $timestamp >= $recent_after ? 'recent' : 'historical';
 	}
 
 	/**

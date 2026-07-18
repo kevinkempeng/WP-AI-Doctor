@@ -2,6 +2,15 @@
 
 All notable changes to PressCare AI Error Doctor are documented here.
 
+## 1.0.1 - 2026-07-18
+
+- Added recent, historical, and undated event classification with human-readable date guidance.
+- Redacted database names, table identifiers, and database users before storage, export, or optional AI use.
+- Added regression coverage for the expanded privacy boundary.
+- Clarified provider readiness, consent, and possible provider charges.
+- Added a hard output-token limit and tighter response schema for predictable AI usage.
+- Redesigned the admin screen with a polished PressCare AI workflow and roadmap panel.
+
 ## 1.0.0 - 2026-07-18
 
 - Prepared the first stable WordPress.org release.
