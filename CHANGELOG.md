@@ -2,6 +2,15 @@
 
 All notable changes to PressCare AI Error Doctor are documented here.
 
+## 1.1.0 - 2026-07-18
+
+- Reorganized findings into current, historical, and handled sections ranked by actionable priority.
+- Grouped findings by the plugin, theme, WordPress area, or unidentified source involved.
+- Added plain-language titles, impact explanations, safe resolution steps, and collapsible technical evidence.
+- Added focused AI requests for one selected finding while preserving explicit consent.
+- Added a per-administrator handled state that automatically reopens when a newer occurrence appears.
+- Limited complete AI briefs to eight actionable findings and instructed providers to avoid repetitive guidance.
+
 ## 1.0.2 - 2026-07-18
 
 - Fixed text-generation provider detection for methods exposed dynamically by the WordPress AI Client.

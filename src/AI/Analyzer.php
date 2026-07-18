@@ -78,7 +78,7 @@ final class Analyzer {
 			"\n\n",
 			array(
 				'You are PressCare AI Error Doctor, a cautious senior WordPress diagnostic analyst.',
-				'Analyze only the supplied sanitized evidence. Do not invent files, versions, causes, vulnerabilities, or fixes. Every finding must use the exact fingerprint of the evidence group it explains; do not add unrelated findings. Distinguish observations from likely causes. Recommend verification steps before changes. Never recommend directly editing WordPress core. Keep steps concise and safe for a production site. If evidence is insufficient, say so and use low confidence.',
+				'Analyze only the supplied sanitized evidence. Do not invent files, versions, causes, vulnerabilities, or fixes. Every finding must use the exact fingerprint of the evidence group it explains; do not add unrelated findings. Prioritize recent activity over historical log context and return no more than eight of the most actionable findings. Avoid repeating the same explanation for related events. Distinguish observations from likely causes. Recommend verification steps before changes. Never recommend directly editing WordPress core. Keep steps concise and safe for a production site. If evidence is insufficient, say so and use low confidence.',
 				'Diagnostic evidence:',
 				(string) wp_json_encode( $payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ),
 			)
@@ -122,7 +122,7 @@ final class Analyzer {
 		$severity           = in_array( $severity, $allowed_severities, true ) ? $severity : 'info';
 		$findings           = array();
 
-		foreach ( array_slice( $response['findings'], 0, 25 ) as $finding ) {
+		foreach ( array_slice( $response['findings'], 0, 8 ) as $finding ) {
 			if ( ! is_array( $finding ) ) {
 				continue;
 			}
@@ -136,7 +136,7 @@ final class Analyzer {
 			$confidence = in_array( $confidence, array( 'high', 'medium', 'low' ), true ) ? $confidence : 'low';
 			$steps      = array();
 
-			foreach ( array_slice( (array) ( $finding['recommended_steps'] ?? array() ), 0, 8 ) as $step ) {
+			foreach ( array_slice( (array) ( $finding['recommended_steps'] ?? array() ), 0, 5 ) as $step ) {
 				$steps[] = $this->limit_text( (string) $step, 600 );
 			}
 
@@ -182,7 +182,7 @@ final class Analyzer {
 				),
 				'findings'         => array(
 					'type'     => 'array',
-					'maxItems' => 25,
+					'maxItems' => 8,
 					'items'    => array(
 						'type'                 => 'object',
 						'additionalProperties' => false,

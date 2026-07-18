@@ -2,7 +2,7 @@
 
 PressCare AI Error Doctor is an original, read-only WordPress diagnostics plugin by **Kevin Kemp - PressCare**. It groups noisy PHP and WordPress errors, removes sensitive data, and uses the provider-independent AI Client in WordPress 7.0 to generate cautious, structured explanations.
 
-Version `1.0.2` is the current staging release. The plugin is not a fork and contains no inherited plugin code or branding.
+Version `1.1.0` is the current staging release. The plugin is not a fork and contains no inherited plugin code or branding.
 
 ## Compatibility
 
@@ -14,17 +14,20 @@ Version `1.0.2` is the current staging release. The plugin is not a fork and con
 
 WordPress 7.0 is intentional: it supplies the stable, provider-independent AI Client and Connectors credential interface. Requiring PHP 8.0 provides modern language features without limiting the plugin to only the newest hosting platforms.
 
-## Version 1.0.2 scope
+## Version 1.1.0 scope
 
 1. Locate a configured WordPress or PHP error log.
 2. Read only the final 2 MB.
 3. Parse and group recognized PHP and WordPress error events.
 4. Separate activity from the last seven days from older log history.
 5. Attribute paths to a plugin, theme, WordPress core, or an unknown component.
-6. Redact database identifiers, common secrets, and personal data before storage.
-7. Store the sanitized report only for the administrator who ran it.
-8. Export the sanitized report as JSON.
-9. With explicit approval, request a structured explanation from the AI provider configured in WordPress.
+6. Rank current findings, group them by component, and collapse historical context.
+7. Provide plain-language impact and safe resolution guidance without modifying the site.
+8. Let each administrator mark findings handled until a newer occurrence reopens them.
+9. Redact database identifiers, common secrets, and personal data before storage.
+10. Store the sanitized report only for the administrator who ran it.
+11. Export the sanitized report as JSON.
+12. With explicit approval, request a focused or complete structured explanation from the AI provider configured in WordPress.
 
 The plugin does not edit files, alter configuration, clear logs, deactivate plugins, install updates, or apply AI-generated fixes.
 

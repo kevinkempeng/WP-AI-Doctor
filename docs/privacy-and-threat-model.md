@@ -10,7 +10,7 @@
 - Passwords and values labeled as keys, secrets, authentication, or authorization data.
 - Raw error-log content.
 
-## Controls in version 1.0.2
+## Controls in version 1.1.0
 
 - Reads no more than 2 MB from the end of a local file.
 - Never accepts a log path from an HTTP request.
@@ -23,6 +23,8 @@
 - Stores only the log filename, never its full path.
 - Re-runs redaction after the diagnostic extension filter.
 - Requires explicit consent for every AI request.
+- Allows a focused AI request containing one selected finding instead of the complete sanitized report.
+- Stores only a finding fingerprint and handled timestamp when an administrator organizes the action list.
 - Uses WordPress Connectors for provider credential management.
 - Does not include a file editor, command runner, automated repair, or executable AI tool.
 

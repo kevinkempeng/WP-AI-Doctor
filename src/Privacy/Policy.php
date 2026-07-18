@@ -40,7 +40,7 @@ final class Policy {
 			. '</p>';
 
 		$content .= '<p>'
-			. esc_html__( 'The stored local and AI reports remain in the administrator’s user metadata until that administrator clears the report or the plugin is uninstalled. Site administrators should review the privacy terms of their configured AI provider and should not enable AI analysis if their policies prohibit sending diagnostic data to that provider.', 'presscare-ai-error-doctor' )
+			. esc_html__( 'The stored local and AI reports, along with finding fingerprints marked handled by the administrator, remain in that administrator’s user metadata until the report is cleared or the plugin is uninstalled. Site administrators should review the privacy terms of their configured AI provider and should not enable AI analysis if their policies prohibit sending diagnostic data to that provider.', 'presscare-ai-error-doctor' )
 			. '</p>';
 
 		wp_add_privacy_policy_content(

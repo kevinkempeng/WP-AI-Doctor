@@ -3,7 +3,7 @@ Tags: ai, debug, diagnostics, error log, site health
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.2
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,6 +18,9 @@ The local diagnostic engine:
 * Reads no more than the final 2 MB of a configured log.
 * Groups repeated PHP and WordPress errors by fingerprint.
 * Separates activity from the last seven days from older log history.
+* Groups current findings by component and ranks actionable activity ahead of historical context.
+* Provides plain-language summaries, safe resolution steps, and collapsible technical evidence.
+* Lets administrators mark findings handled; newer occurrences automatically return to the action list.
 * Identifies likely plugin, theme, or WordPress core ownership from file paths.
 * Removes common filesystem paths, site URLs, database identifiers, email addresses, IP addresses, access tokens, API keys, and other secrets.
 * Stores only sanitized grouped samples for the current administrator.
@@ -25,13 +28,13 @@ The local diagnostic engine:
 
 When an administrator explicitly approves AI analysis, the plugin uses the provider-independent AI Client included in WordPress 7.0. WordPress routes the request to a compatible provider configured by the site owner in Settings > Connectors.
 
-The AI response explains the evidence, separates observations from likely causes, assigns a confidence level, and recommends verification steps. It cannot modify files or apply fixes.
+The AI response explains the evidence, separates observations from likely causes, assigns a confidence level, and recommends verification steps. Administrators can request a focused explanation for one finding or a concise brief covering the report. AI Error Doctor cannot modify files or apply fixes.
 
 = Privacy and external services =
 
 Local scans do not contact an external service.
 
-AI analysis is optional and happens only after an administrator checks the consent box and clicks "Explain with AI." The plugin sends the following sanitized data to the AI provider selected by WordPress:
+AI analysis is optional and happens only after an administrator checks the consent box and requests an explanation. The plugin sends the following sanitized data to the AI provider selected by WordPress:
 
 * WordPress and PHP versions.
 * Active theme name and version.
@@ -84,7 +87,7 @@ PressCare AI Error Doctor does not store provider credentials. WordPress 7.0 man
 
 = Is the complete log sent to AI? =
 
-No. The raw log remains on the server. Only the sanitized environment summary and up to 25 grouped samples are included in an approved AI request.
+No. The raw log remains on the server. A focused request includes one selected sanitized group; a complete-report request can include up to 25 sanitized groups and returns no more than eight prioritized explanations.
 
 = Can I specify a log outside wp-content? =
 
@@ -101,6 +104,15 @@ After the plugin is listed, use its WordPress.org support forum for ordinary sup
 The complete source code, build script, automated tests, and development documentation are maintained at https://github.com/kevinkempeng/WP-AI-Doctor.
 
 == Changelog ==
+
+= 1.1.0 =
+
+* Reorganized findings into a prioritized action plan grouped by plugin, theme, or WordPress area.
+* Collapsed historical log groups so old events no longer overwhelm current work.
+* Added plain-language finding titles, impact explanations, and safe resolution steps.
+* Added focused PressCare AI requests for individual findings.
+* Added technical-detail toggles and a per-administrator Mark handled workflow.
+* Limited complete AI briefs to the eight most actionable findings and reduced repetitive guidance.
 
 = 1.0.2 =
 
