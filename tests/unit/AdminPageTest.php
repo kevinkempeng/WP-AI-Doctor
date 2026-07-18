@@ -122,6 +122,19 @@ final class AdminPageTest extends TestCase {
 			'summary' => array( 'recency_window_days' => 7 ),
 			'groups'  => array(
 				array(
+					'fingerprint'      => 'ordinary-warning',
+					'severity'         => 'warning',
+					'component_type'   => 'plugin',
+					'component_slug'   => 'first-in-input',
+					'count'            => 20,
+					'recent_count'     => 20,
+					'historical_count' => 0,
+					'undated_count'    => 0,
+					'first_seen'       => 100,
+					'last_seen'        => 200,
+					'sample'           => '[18-Jul-2026 08:00:44 UTC] PHP Warning: Ordinary warning in [plugins]/example.php on line 10',
+				),
+				array(
 					'fingerprint'      => 'fatal-finding-123',
 					'severity'         => 'critical',
 					'component_type'   => 'plugin',
@@ -142,12 +155,97 @@ final class AdminPageTest extends TestCase {
 		$html = (string) ob_get_clean();
 
 		self::assertStringContainsString( '1 current critical finding', $html );
+		self::assertStringContainsString( 'Serious issues needing attention now', $html );
 		self::assertStringContainsString( 'data-pcaied-jump-to="pcaied-finding-fatal-finding-123"', $html );
-		self::assertStringContainsString( 'pcaied-finding-severity-critical', $html );
-		self::assertStringContainsString( 'Critical error', $html );
+		self::assertStringContainsString( 'pcaied-finding-severity-critical-active', $html );
+		self::assertStringContainsString( 'Critical · active now', $html );
+		self::assertStringContainsString( 'id="pcaied-resolution-fatal-finding-123" class="pcaied-resolution">', $html );
 		self::assertStringContainsString( 'Get expert help', $html );
 		self::assertStringContainsString( 'finding_id=fatal-finding-123', $html );
 		self::assertStringNotContainsString( 'Payment%20task%20stopped', $html );
+		self::assertLessThan( strpos( $html, 'Ordinary warning' ), strpos( $html, 'Payment task stopped' ) );
+	}
+
+	public function test_summary_counts_only_recent_fatal_events_as_current_critical(): void {
+		$report = array(
+			'generated_at' => 200,
+			'log'          => array(
+				'source'      => 'WP_DEBUG_LOG',
+				'bytes_read'  => 1000,
+				'modified_at' => 200,
+			),
+			'environment'  => array(
+				'wordpress_version' => '7.0',
+				'php_version'       => '8.3',
+			),
+			'summary'      => array(
+				'recent_events_total'     => 3,
+				'historical_events_total' => 6,
+				'undated_events_total'    => 0,
+				'recency_window_days'     => 7,
+				'counts'                  => array( 'critical' => 6 ),
+			),
+			'groups'       => array(
+				array(
+					'severity'         => 'critical',
+					'recent_count'     => 0,
+					'historical_count' => 6,
+				),
+				array(
+					'severity'     => 'warning',
+					'recent_count' => 3,
+				),
+			),
+		);
+
+		ob_start();
+		$this->invoke( 'render_summary', array( $report ) );
+		$html = (string) ob_get_clean();
+
+		self::assertMatchesRegularExpression( '/<strong>0<\/strong>\s*<span>Current critical<\/span>/', $html );
+		self::assertStringContainsString( 'None in the last 7 days', $html );
+		self::assertStringNotContainsString( '<span>Critical</span>', $html );
+	}
+
+	public function test_historical_plugin_finding_does_not_recommend_an_immediate_update(): void {
+		$steps = $this->invoke(
+			'resolution_steps',
+			array(
+				array(
+					'severity'         => 'critical',
+					'component_type'   => 'plugin',
+					'component_slug'   => 'woocommerce-payments',
+					'recent_count'     => 0,
+					'historical_count' => 2,
+					'undated_count'    => 0,
+				)
+			)
+		);
+		$text = implode( ' ', $steps );
+
+		self::assertStringContainsString( 'Do not update or change Woocommerce Payments solely because of this older record', $text );
+		self::assertStringContainsString( 'No immediate change is recommended', $text );
+		self::assertStringNotContainsString( 'Back up first, then update or test', $text );
+	}
+
+	public function test_report_explainer_describes_the_log_without_exposing_a_path(): void {
+		$report = array(
+			'log' => array(
+				'source'     => 'WP_DEBUG_LOG',
+				'file'       => 'debug.log',
+				'bytes_read' => 2048,
+				'truncated'  => true,
+			),
+		);
+
+		ob_start();
+		$this->invoke( 'render_report_explainer', array( $report ) );
+		$html = (string) ob_get_clean();
+
+		self::assertStringContainsString( 'A readable translation of your PHP error log', $html );
+		self::assertStringContainsString( 'WordPress debug log configured by WP_DEBUG_LOG', $html );
+		self::assertStringContainsString( 'View / save as PDF', $html );
+		self::assertStringContainsString( 'not the complete raw log or its private server path', $html );
 	}
 
 	public function test_support_options_keep_free_guidance_separate_from_advanced_care(): void {

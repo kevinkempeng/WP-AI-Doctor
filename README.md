@@ -2,7 +2,7 @@
 
 PressCare AI Error Doctor is an original, read-only WordPress diagnostics plugin by **Kevin Kemp - PressCare**. It groups noisy PHP and WordPress errors, removes sensitive data, and uses the provider-independent AI Client in WordPress 7.0 to generate cautious, structured explanations.
 
-Version `1.1.1` is the current staging release. The plugin is not a fork and contains no inherited plugin code or branding.
+Version `1.1.2` is the current staging release. The plugin is not a fork and contains no inherited plugin code or branding.
 
 ## Compatibility
 
@@ -14,7 +14,7 @@ Version `1.1.1` is the current staging release. The plugin is not a fork and con
 
 WordPress 7.0 is intentional: it supplies the stable, provider-independent AI Client and Connectors credential interface. Requiring PHP 8.0 provides modern language features without limiting the plugin to only the newest hosting platforms.
 
-## Version 1.1.1 scope
+## Version 1.1.2 scope
 
 1. Locate a configured WordPress or PHP error log.
 2. Read only the final 2 MB.
@@ -22,14 +22,16 @@ WordPress 7.0 is intentional: it supplies the stable, provider-independent AI Cl
 4. Separate activity from the last seven days from older log history.
 5. Attribute paths to a plugin, theme, WordPress core, or an unknown component.
 6. Rank current findings, group them by component, and collapse historical context.
-7. Call out current critical findings with prominent labels and direct jump links.
-8. Provide plain-language impact and safe resolution guidance without modifying the site.
-9. Let each administrator mark findings handled until a newer occurrence reopens them.
-10. Redact database identifiers, common secrets, and personal data before storage.
-11. Store the sanitized report only for the administrator who ran it.
-12. Export the sanitized report as JSON.
-13. With explicit approval, request a focused or complete structured explanation from the AI provider configured in WordPress.
-14. Let an administrator explicitly open a PressCare support request using only the sanitized finding ID, severity, and component slug.
+7. Put active fatal errors first, with their explanation and safe next steps open by default.
+8. Keep old fatal records neutral and archived so they are not mistaken for active emergencies.
+9. Provide severity-aware impact and resolution guidance without modifying the site.
+10. Explain the configured log source and create a sanitized print view that can be saved as PDF.
+11. Let each administrator mark findings handled until a newer occurrence reopens them.
+12. Redact database identifiers, common secrets, and personal data before storage.
+13. Store the sanitized report only for the administrator who ran it.
+14. Export the sanitized report as JSON.
+15. With explicit approval, request a focused or complete structured explanation from the AI provider configured in WordPress.
+16. Let an administrator explicitly open a PressCare support request using only the sanitized finding ID, severity, and component slug.
 
 The plugin does not edit files, alter configuration, clear logs, deactivate plugins, install updates, or apply AI-generated fixes.
 

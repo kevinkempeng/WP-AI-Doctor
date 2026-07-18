@@ -3,7 +3,7 @@ Tags: ai, debug, diagnostics, error log, site health
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,8 +19,10 @@ The local diagnostic engine:
 * Groups repeated PHP and WordPress errors by fingerprint.
 * Separates activity from the last seven days from older log history.
 * Groups current findings by component and ranks actionable activity ahead of historical context.
-* Calls out current critical findings in a prominent summary with direct jump links.
+* Places active fatal errors in a dedicated first section with their safe next steps already open.
+* Treats old fatal records as neutral history instead of active critical problems.
 * Provides plain-language summaries, safe resolution steps, and collapsible technical evidence.
+* Explains where the PHP log comes from and offers a sanitized print view that can be saved as PDF.
 * Lets administrators mark findings handled; newer occurrences automatically return to the action list.
 * Offers an optional PressCare support link for each sanitized finding ID.
 * Identifies likely plugin, theme, or WordPress core ownership from file paths.
@@ -99,6 +101,14 @@ Yes. Define an absolute, readable local path in `wp-config.php`:
 
 `define( 'PCAIED_LOG_PATH', '/absolute/path/to/php-error.log' );`
 
+= What does Current critical mean? =
+
+It counts only fatal errors with timestamps inside the current seven-day review window. Fatal errors found only in older log history are labeled Past fatal error and do not appear as active critical problems.
+
+= Can I save an easy-to-read PDF? =
+
+Yes. Choose View / save as PDF to open a print-friendly, sanitized report, then use the browser's Print or Save as PDF command. The document contains grouped sanitized examples, explanations, and next steps. It does not expose the complete raw log or its private server path.
+
 == Support ==
 
 After the plugin is listed, use its WordPress.org support forum for ordinary support and feature requests. For private or security-sensitive reports that should not include production logs or credentials, contact PressCare at https://presscare.com/contact/.
@@ -108,6 +118,14 @@ After the plugin is listed, use its WordPress.org support forum for ordinary sup
 The complete source code, build script, automated tests, and development documentation are maintained at https://github.com/kevinkempeng/WP-AI-Doctor.
 
 == Changelog ==
+
+= 1.1.2 =
+
+* Changed black summary cards to count only current critical errors, errors, and warnings.
+* Moved active fatal errors into a dedicated first section with expanded explanations and resolution steps.
+* Restyled older fatal records as neutral history and removed immediate-update advice from historical findings.
+* Added severity-aware guidance so current warnings are not described as site-stopping emergencies.
+* Added a plain-language log-source explainer and sanitized report view that can be printed or saved as PDF.
 
 = 1.1.1 =
 

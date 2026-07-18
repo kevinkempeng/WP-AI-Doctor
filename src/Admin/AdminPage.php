@@ -40,6 +40,7 @@ final class AdminPage {
 		add_action( 'admin_post_pcaied_analyze', array( $this, 'handle_analyze' ) );
 		add_action( 'admin_post_pcaied_clear', array( $this, 'handle_clear' ) );
 		add_action( 'admin_post_pcaied_export', array( $this, 'handle_export' ) );
+		add_action( 'admin_post_pcaied_print', array( $this, 'handle_printable_report' ) );
 		add_action( 'admin_post_pcaied_review', array( $this, 'handle_review' ) );
 	}
 
@@ -115,6 +116,7 @@ final class AdminPage {
 					<?php $this->action_form( 'pcaied_scan', __( 'Run local scan', 'presscare-ai-error-doctor' ), 'button button-primary' ); ?>
 					<?php if ( $report ) : ?>
 						<?php $this->action_form( 'pcaied_export', __( 'Export JSON', 'presscare-ai-error-doctor' ), 'button' ); ?>
+						<?php $this->printable_report_form(); ?>
 						<?php $this->action_form( 'pcaied_clear', __( 'Clear report', 'presscare-ai-error-doctor' ), 'button pcaied-clear' ); ?>
 					<?php endif; ?>
 				</div>
@@ -122,6 +124,7 @@ final class AdminPage {
 
 			<?php if ( $report ) : ?>
 				<?php $this->render_summary( $report ); ?>
+				<?php $this->render_report_explainer( $report ); ?>
 				<?php $this->render_groups( $report, $handled ); ?>
 				<?php $this->render_ai_action( $report ); ?>
 				<?php $this->render_support_options(); ?>
@@ -256,17 +259,35 @@ final class AdminPage {
 		exit;
 	}
 
+	public function handle_printable_report(): void {
+		$this->authorize();
+		check_admin_referer( 'pcaied_print' );
+
+		$report = get_user_meta( get_current_user_id(), self::REPORT_META, true );
+		if ( ! is_array( $report ) || ! $report ) {
+			$this->redirect_with_notice( 'error', __( 'There is no diagnostic report to display.', 'presscare-ai-error-doctor' ) );
+		}
+
+		$report = $this->sanitize_saved_report( $report, self::REPORT_META );
+		nocache_headers();
+		header( 'Content-Type: text/html; charset=' . get_option( 'blog_charset', 'UTF-8' ) );
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'Referrer-Policy: no-referrer' );
+		$this->render_printable_document( $report );
+		exit;
+	}
+
 	/**
 	 * @param array<string,mixed> $report Report data.
 	 */
 	private function render_summary( array $report ): void {
-		$counts         = $report['summary']['counts'] ?? array();
 		$summary        = $report['summary'] ?? array();
 		$window_days    = (int) ( $summary['recency_window_days'] ?? 7 );
 		$recent_events  = (int) ( $summary['recent_events_total'] ?? 0 );
 		$older_events   = (int) ( $summary['historical_events_total'] ?? 0 );
 		$undated_events = (int) ( $summary['undated_events_total'] ?? 0 );
 		$has_timeline   = array_key_exists( 'recent_events_total', $summary );
+		$current_counts = $this->current_severity_counts( $report );
 		?>
 		<section class="pcaied-metrics" aria-label="<?php esc_attr_e( 'Diagnostic summary', 'presscare-ai-error-doctor' ); ?>">
 			<?php
@@ -279,9 +300,25 @@ final class AdminPage {
 				$this->metric( __( 'Events found', 'presscare-ai-error-doctor' ), (int) ( $summary['events_total'] ?? 0 ), 'recent', __( 'Saved earlier report', 'presscare-ai-error-doctor' ) );
 				$this->metric( __( 'Groups', 'presscare-ai-error-doctor' ), (int) ( $summary['groups_total'] ?? 0 ), 'historical', __( 'Repeated events combined', 'presscare-ai-error-doctor' ) );
 			}
-			$this->metric( __( 'Critical', 'presscare-ai-error-doctor' ), (int) ( $counts['critical'] ?? 0 ), 'critical', __( 'Across the scanned log', 'presscare-ai-error-doctor' ) );
-			$this->metric( __( 'Errors', 'presscare-ai-error-doctor' ), (int) ( $counts['error'] ?? 0 ), 'error', __( 'Across the scanned log', 'presscare-ai-error-doctor' ) );
-			$this->metric( __( 'Warnings', 'presscare-ai-error-doctor' ), (int) ( $counts['warning'] ?? 0 ), 'warning', __( 'Across the scanned log', 'presscare-ai-error-doctor' ) );
+			if ( $has_timeline ) {
+				$current_critical = $current_counts['critical'];
+				$this->metric(
+					__( 'Current critical', 'presscare-ai-error-doctor' ),
+					$current_critical,
+					$current_critical > 0 ? 'critical' : 'critical-clear',
+					$current_critical > 0 ? __( 'Needs attention now', 'presscare-ai-error-doctor' ) : sprintf(
+						/* translators: %d: Number of days considered recent. */
+						__( 'None in the last %d days', 'presscare-ai-error-doctor' ),
+						$window_days
+					)
+				);
+				$this->metric( __( 'Current errors', 'presscare-ai-error-doctor' ), $current_counts['error'], 'error', $recent_context );
+				$this->metric( __( 'Current warnings', 'presscare-ai-error-doctor' ), $current_counts['warning'], 'warning', $recent_context );
+			} else {
+				$this->metric( __( 'Current critical', 'presscare-ai-error-doctor' ), '—', 'critical-clear', __( 'Run a fresh scan to check', 'presscare-ai-error-doctor' ) );
+				$this->metric( __( 'Current errors', 'presscare-ai-error-doctor' ), '—', 'historical', __( 'Run a fresh scan to check', 'presscare-ai-error-doctor' ) );
+				$this->metric( __( 'Current warnings', 'presscare-ai-error-doctor' ), '—', 'historical', __( 'Run a fresh scan to check', 'presscare-ai-error-doctor' ) );
+			}
 			?>
 		</section>
 		<section class="pcaied-timeline-note <?php echo esc_attr( $has_timeline && $older_events <= $recent_events ? 'pcaied-timeline-current' : 'pcaied-timeline-history' ); ?>">
@@ -321,6 +358,230 @@ final class AdminPage {
 	}
 
 	/**
+	 * Counts only dated events inside the active review window. Historical and
+	 * undated records must not be presented as current emergencies.
+	 *
+	 * @param array<string,mixed> $report Report data.
+	 * @return array{critical:int,error:int,warning:int,info:int}
+	 */
+	private function current_severity_counts( array $report ): array {
+		$counts = array_fill_keys( array( 'critical', 'error', 'warning', 'info' ), 0 );
+		$groups = isset( $report['groups'] ) && is_array( $report['groups'] ) ? $report['groups'] : array();
+
+		foreach ( $groups as $group ) {
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			$severity = sanitize_key( (string) ( $group['severity'] ?? 'info' ) );
+			if ( isset( $counts[ $severity ] ) ) {
+				$counts[ $severity ] += (int) ( $group['recent_count'] ?? 0 );
+			}
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * @param array<string,mixed> $report Report data.
+	 */
+	private function render_report_explainer( array $report ): void {
+		$source      = (string) ( $report['log']['source'] ?? '' );
+		$file        = (string) ( $report['log']['file'] ?? '' );
+		$bytes_read  = (int) ( $report['log']['bytes_read'] ?? 0 );
+		$was_trimmed = ! empty( $report['log']['truncated'] );
+		?>
+		<section class="pcaied-panel pcaied-report-explainer">
+			<div class="pcaied-report-flow" aria-hidden="true">
+				<span>PHP</span><b>→</b><span><?php esc_html_e( 'Log', 'presscare-ai-error-doctor' ); ?></span><b>→</b><span><?php esc_html_e( 'Safe report', 'presscare-ai-error-doctor' ); ?></span>
+			</div>
+			<div class="pcaied-report-explainer-copy">
+				<p class="pcaied-section-kicker"><?php esc_html_e( 'What you are looking at', 'presscare-ai-error-doctor' ); ?></p>
+				<h2><?php esc_html_e( 'A readable translation of your PHP error log', 'presscare-ai-error-doctor' ); ?></h2>
+				<p><?php esc_html_e( 'WordPress, PHP, and plugins can write technical messages to a server log. AI Error Doctor reads only the end of that existing file, combines repeated messages, separates recent activity from old history, and removes common private details. It does not create these errors or change the original log.', 'presscare-ai-error-doctor' ); ?></p>
+				<div class="pcaied-report-source">
+					<div><strong><?php esc_html_e( 'Configured source', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( $this->log_source_description( $source ) ); ?></span></div>
+					<div><strong><?php esc_html_e( 'Log file', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( '' !== $file ? $file : __( 'Filename unavailable', 'presscare-ai-error-doctor' ) ); ?></span></div>
+					<div><strong><?php esc_html_e( 'Amount translated', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( size_format( $bytes_read ) . ( $was_trimmed ? __( ' from the end of a larger log', 'presscare-ai-error-doctor' ) : '' ) ); ?></span></div>
+				</div>
+				<p class="pcaied-report-privacy"><?php esc_html_e( 'The readable report contains sanitized grouped examples—not the complete raw log or its private server path.', 'presscare-ai-error-doctor' ); ?></p>
+			</div>
+			<?php $this->printable_report_form( 'button button-primary pcaied-print-button' ); ?>
+		</section>
+		<?php
+	}
+
+	private function log_source_description( string $source ): string {
+		$descriptions = array(
+			'WP_DEBUG_LOG'    => __( 'WordPress debug log configured by WP_DEBUG_LOG', 'presscare-ai-error-doctor' ),
+			'PHP error_log'   => __( 'Server log configured by PHP error_log', 'presscare-ai-error-doctor' ),
+			'PCAIED_LOG_PATH' => __( 'Custom log selected by PCAIED_LOG_PATH', 'presscare-ai-error-doctor' ),
+		);
+
+		return $descriptions[ $source ] ?? __( 'Readable PHP or WordPress error log', 'presscare-ai-error-doctor' );
+	}
+
+	/**
+	 * @param array<string,mixed> $report Report data.
+	 */
+	private function render_printable_document( array $report ): void {
+		$summary          = isset( $report['summary'] ) && is_array( $report['summary'] ) ? $report['summary'] : array();
+		$groups           = isset( $report['groups'] ) && is_array( $report['groups'] ) ? array_values( array_filter( $report['groups'], 'is_array' ) ) : array();
+		$window_days      = (int) ( $summary['recency_window_days'] ?? 7 );
+		$current_counts   = $this->current_severity_counts( $report );
+		$current_critical = array();
+		$current_other    = array();
+		$historical       = array();
+
+		usort( $groups, array( $this, 'compare_group_priority' ) );
+		foreach ( $groups as $group ) {
+			$recent   = (int) ( $group['recent_count'] ?? 0 );
+			$undated  = (int) ( $group['undated_count'] ?? 0 );
+			$severity = sanitize_key( (string) ( $group['severity'] ?? 'info' ) );
+
+			if ( 'critical' === $severity && $recent > 0 ) {
+				$current_critical[] = $group;
+			} elseif ( $recent > 0 || $undated > 0 ) {
+				$current_other[] = $group;
+			} else {
+				$historical[] = $group;
+			}
+		}
+		?>
+		<!doctype html>
+		<html>
+		<head>
+			<meta charset="<?php echo esc_attr( (string) get_option( 'blog_charset', 'UTF-8' ) ); ?>">
+			<meta name="viewport" content="width=device-width, initial-scale=1">
+			<title><?php esc_html_e( 'PressCare AI Error Doctor — Readable report', 'presscare-ai-error-doctor' ); ?></title>
+			<style>
+				:root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1b2035; background: #eef1f7; }
+				* { box-sizing: border-box; }
+				body { margin: 0; background: #eef1f7; }
+				main { width: min(100% - 32px, 980px); margin: 28px auto; }
+				.hero { padding: 34px; border-radius: 18px; background: #11162f; color: #fff; }
+				.eyebrow { margin: 0; color: #00dfa2; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+				h1 { margin: 10px 0 8px; font-size: 32px; }
+				.hero p:last-child { margin: 0; color: #cbd1e7; line-height: 1.6; }
+				.toolbar { display: flex; justify-content: space-between; gap: 16px; margin: 16px 0; padding: 14px 16px; border-radius: 12px; background: #fff; }
+				button { padding: 9px 14px; border: 0; border-radius: 8px; background: #5033c7; color: #fff; cursor: pointer; font-weight: 750; }
+				.panel { margin: 16px 0; padding: 24px; border: 1px solid #dfe3ed; border-radius: 15px; background: #fff; }
+				.origin { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+				.origin div, .metric { padding: 13px; border-radius: 10px; background: #f5f7fb; }
+				.origin strong, .origin span { display: block; }
+				.origin span { margin-top: 5px; color: #60677d; font-size: 13px; }
+				.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+				.metric strong, .metric span { display: block; }
+				.metric strong { font-size: 26px; }
+				.metric span { margin-top: 4px; color: #60677d; font-size: 12px; }
+				.status { margin-top: 16px; padding: 15px; border-radius: 10px; background: #effbf7; color: #006849; font-weight: 750; }
+				.status.active { background: #fff0f3; color: #a61535; }
+				.section-title { margin: 30px 0 12px; }
+				.section-title h2 { margin: 0 0 5px; }
+				.section-title p { margin: 0; color: #60677d; }
+				.finding { margin: 12px 0; padding: 20px; border: 1px solid #dfe3ed; border-left: 5px solid #98a1b5; border-radius: 12px; background: #fff; break-inside: avoid; }
+				.finding.active { border: 2px solid #e78fa3; border-left: 7px solid #c61f43; }
+				.finding h3 { margin: 9px 0 6px; }
+				.badge { display: inline-block; padding: 5px 8px; border-radius: 999px; background: #eceff5; color: #586078; font-size: 10px; font-weight: 850; text-transform: uppercase; }
+				.badge.active { background: #d92d4f; color: #fff; }
+				.finding p { color: #60677d; line-height: 1.55; }
+				.finding ol { padding-left: 21px; }
+				.finding li { margin-bottom: 6px; line-height: 1.5; }
+				.finding pre { overflow-wrap: anywhere; padding: 13px; border-radius: 8px; background: #f4f6fa; white-space: pre-wrap; font-size: 11px; line-height: 1.55; }
+				.meta { color: #737a8e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+				@media (max-width: 700px) { .origin, .metrics { grid-template-columns: 1fr 1fr; } .toolbar { align-items: flex-start; flex-direction: column; } }
+				@media print { body { background: #fff; } main { width: 100%; margin: 0; } .hero { border-radius: 0; } .toolbar button { display: none; } .panel, .finding { box-shadow: none; } }
+			</style>
+		</head>
+		<body>
+		<main>
+			<header class="hero">
+				<p class="eyebrow"><?php esc_html_e( 'PressCare AI · Sanitized diagnostic report', 'presscare-ai-error-doctor' ); ?></p>
+				<h1><?php esc_html_e( 'A readable translation of the PHP error log', 'presscare-ai-error-doctor' ); ?></h1>
+				<p><?php esc_html_e( 'This document groups repeated technical messages and explains their timing and importance. It is not the raw log and does not expose the private server path.', 'presscare-ai-error-doctor' ); ?></p>
+			</header>
+			<div class="toolbar">
+				<?php /* translators: %s: Date and time when the report was generated. */ ?>
+				<span><?php echo esc_html( sprintf( __( 'Generated %s', 'presscare-ai-error-doctor' ), $this->format_timestamp( $report['generated_at'] ?? null ) ) ); ?></span>
+				<button type="button" onclick="window.print()"><?php esc_html_e( 'Print or save as PDF', 'presscare-ai-error-doctor' ); ?></button>
+			</div>
+			<section class="panel">
+				<h2><?php esc_html_e( 'Where this information came from', 'presscare-ai-error-doctor' ); ?></h2>
+				<p><?php esc_html_e( 'PHP, WordPress, themes, and plugins can write messages to a configured error log. AI Error Doctor reads no more than the final 2 MB, groups repeats, labels events from the current review window, and sanitizes common private details. It never edits or clears the source file.', 'presscare-ai-error-doctor' ); ?></p>
+				<div class="origin">
+					<div><strong><?php esc_html_e( 'Configured source', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( $this->log_source_description( (string) ( $report['log']['source'] ?? '' ) ) ); ?></span></div>
+					<div><strong><?php esc_html_e( 'Safe filename', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( (string) ( $report['log']['file'] ?? __( 'Unavailable', 'presscare-ai-error-doctor' ) ) ); ?></span></div>
+					<div><strong><?php esc_html_e( 'Translated amount', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( size_format( (int) ( $report['log']['bytes_read'] ?? 0 ) ) ); ?></span></div>
+				</div>
+			</section>
+			<section class="panel">
+				<div class="metrics">
+					<div class="metric"><strong><?php echo esc_html( (string) $current_counts['critical'] ); ?></strong><span><?php esc_html_e( 'Current critical events', 'presscare-ai-error-doctor' ); ?></span></div>
+					<div class="metric"><strong><?php echo esc_html( (string) ( $summary['recent_events_total'] ?? 0 ) ); ?></strong><span><?php esc_html_e( 'All recent events', 'presscare-ai-error-doctor' ); ?></span></div>
+					<div class="metric"><strong><?php echo esc_html( (string) ( $summary['historical_events_total'] ?? 0 ) ); ?></strong><span><?php esc_html_e( 'Older events', 'presscare-ai-error-doctor' ); ?></span></div>
+					<div class="metric"><strong><?php echo esc_html( (string) count( $groups ) ); ?></strong><span><?php esc_html_e( 'Grouped findings', 'presscare-ai-error-doctor' ); ?></span></div>
+				</div>
+				<div class="status <?php echo esc_attr( $current_counts['critical'] > 0 ? 'active' : '' ); ?>">
+					<?php /* translators: %d: Number of days considered recent. */ ?>
+					<?php echo esc_html( $current_counts['critical'] > 0 ? __( 'Current fatal errors were found. Start with the first section below.', 'presscare-ai-error-doctor' ) : sprintf( __( 'No fatal errors were recorded in the last %d days.', 'presscare-ai-error-doctor' ), $window_days ) ); ?>
+				</div>
+			</section>
+			<?php $this->render_printable_finding_section( __( 'Serious issues needing attention now', 'presscare-ai-error-doctor' ), __( 'Only active fatal errors appear in this first section.', 'presscare-ai-error-doctor' ), $current_critical, $window_days, true ); ?>
+			<?php $this->render_printable_finding_section( __( 'Other current findings', 'presscare-ai-error-doctor' ), __( 'Current warnings, errors, and events whose timing needs confirmation.', 'presscare-ai-error-doctor' ), $current_other, $window_days ); ?>
+			<?php $this->render_printable_finding_section( __( 'Older log history', 'presscare-ai-error-doctor' ), __( 'These records are not evidence of a current failure. No change is recommended unless they return.', 'presscare-ai-error-doctor' ), $historical, $window_days ); ?>
+		</main>
+		</body>
+		</html>
+		<?php
+	}
+
+	/**
+	 * @param array<int,array<string,mixed>> $groups Finding groups.
+	 */
+	private function render_printable_finding_section( string $title, string $description, array $groups, int $window_days, bool $active = false ): void {
+		if ( ! $groups ) {
+			return;
+		}
+		?>
+		<section>
+			<header class="section-title"><h2><?php echo esc_html( $title ); ?></h2><p><?php echo esc_html( $description ); ?></p></header>
+			<?php foreach ( $groups as $group ) : ?>
+				<article class="finding <?php echo esc_attr( $active ? 'active' : '' ); ?>">
+					<span class="badge <?php echo esc_attr( $active ? 'active' : '' ); ?>"><?php echo esc_html( $active ? __( 'Critical · active now', 'presscare-ai-error-doctor' ) : $this->printable_severity_label( $group ) ); ?></span>
+					<h3><?php echo esc_html( $this->finding_title( $group ) ); ?></h3>
+					<p><?php echo esc_html( $this->finding_explanation( $group, $window_days ) ); ?></p>
+					<h4><?php esc_html_e( 'Recommended next steps', 'presscare-ai-error-doctor' ); ?></h4>
+					<ol><?php foreach ( $this->resolution_steps( $group ) as $step ) : ?><li><?php echo esc_html( $step ); ?></li><?php endforeach; ?></ol>
+					<h4><?php esc_html_e( 'Sanitized technical example', 'presscare-ai-error-doctor' ); ?></h4>
+					<pre><?php echo esc_html( (string) ( $group['sample'] ?? '' ) ); ?></pre>
+					<?php /* translators: 1: Sanitized finding ID, 2: Number of occurrences. */ ?>
+					<div class="meta"><?php echo esc_html( sprintf( __( 'Finding ID %1$s · %2$d occurrences', 'presscare-ai-error-doctor' ), (string) ( $group['fingerprint'] ?? '' ), (int) ( $group['count'] ?? 0 ) ) ); ?></div>
+				</article>
+			<?php endforeach; ?>
+		</section>
+		<?php
+	}
+
+	/**
+	 * @param array<string,mixed> $group Finding group.
+	 */
+	private function printable_severity_label( array $group ): string {
+		$severity = sanitize_key( (string) ( $group['severity'] ?? 'info' ) );
+		$recent   = (int) ( $group['recent_count'] ?? 0 );
+		$undated  = (int) ( $group['undated_count'] ?? 0 );
+
+		if ( 'critical' === $severity && 0 === $recent && 0 === $undated ) {
+			return __( 'Past fatal error', 'presscare-ai-error-doctor' );
+		}
+
+		if ( 'critical' === $severity ) {
+			return __( 'Fatal error · timing unknown', 'presscare-ai-error-doctor' );
+		}
+
+		return ucfirst( $severity );
+	}
+
+	/**
 	 * @param array<string,mixed> $report  Report data.
 	 * @param array<string,mixed> $handled Findings marked handled by the current administrator.
 	 */
@@ -354,7 +615,13 @@ final class AdminPage {
 		$current_critical    = array_values(
 			array_filter(
 				$current_groups,
-				static fn ( array $group ): bool => 'critical' === sanitize_key( (string) ( $group['severity'] ?? '' ) )
+				static fn ( array $group ): bool => 'critical' === sanitize_key( (string) ( $group['severity'] ?? '' ) ) && (int) ( $group['recent_count'] ?? 0 ) > 0
+			)
+		);
+		$current_other       = array_values(
+			array_filter(
+				$current_groups,
+				static fn ( array $group ): bool => 'critical' !== sanitize_key( (string) ( $group['severity'] ?? '' ) ) || (int) ( $group['recent_count'] ?? 0 ) < 1
 			)
 		);
 		$historical_critical = array_values(
@@ -390,11 +657,28 @@ final class AdminPage {
 
 				<?php $this->render_critical_status( $current_critical, $historical_critical ); ?>
 
-				<?php if ( $current_groups ) : ?>
-					<div class="pcaied-component-list">
-						<?php $this->render_component_collection( $current_groups, $window_days ); ?>
+				<?php if ( $current_critical ) : ?>
+					<section class="pcaied-urgent-section" aria-labelledby="pcaied-urgent-section-title">
+						<header>
+							<p class="pcaied-section-kicker"><?php esc_html_e( 'Start here', 'presscare-ai-error-doctor' ); ?></p>
+							<h3 id="pcaied-urgent-section-title"><?php esc_html_e( 'Serious issues needing attention now', 'presscare-ai-error-doctor' ); ?></h3>
+							<p><?php esc_html_e( 'Only fatal errors recorded in the current review window appear here. Each card explains what happened, why it matters, and the safest next steps.', 'presscare-ai-error-doctor' ); ?></p>
+						</header>
+						<div class="pcaied-component-list">
+							<?php $this->render_component_collection( $current_critical, $window_days ); ?>
+						</div>
+					</section>
+				<?php endif; ?>
+
+				<?php if ( $current_other ) : ?>
+					<div class="pcaied-other-findings-heading">
+						<h3><?php echo esc_html( $current_critical ? __( 'Other current findings', 'presscare-ai-error-doctor' ) : __( 'Current findings to review', 'presscare-ai-error-doctor' ) ); ?></h3>
+						<p><?php esc_html_e( 'These may need investigation, but they are not classified as active fatal errors.', 'presscare-ai-error-doctor' ); ?></p>
 					</div>
-				<?php else : ?>
+					<div class="pcaied-component-list">
+						<?php $this->render_component_collection( $current_other, $window_days ); ?>
+					</div>
+				<?php elseif ( ! $current_critical ) : ?>
 					<div class="pcaied-caught-up">
 						<strong><?php esc_html_e( 'Nothing is currently asking for attention.', 'presscare-ai-error-doctor' ); ?></strong>
 						<p><?php esc_html_e( 'The scan found only older log history or findings you already handled. That is useful context, not an urgent repair list.', 'presscare-ai-error-doctor' ); ?></p>
@@ -447,7 +731,7 @@ final class AdminPage {
 						/* translators: %d: Number of current critical findings. */
 						echo esc_html( sprintf( _n( '%d current critical finding', '%d current critical findings', $current_count, 'presscare-ai-error-doctor' ), $current_count ) );
 					} else {
-						esc_html_e( 'No current critical findings', 'presscare-ai-error-doctor' );
+						esc_html_e( 'No active critical errors', 'presscare-ai-error-doctor' );
 					}
 					?>
 				</h3>
@@ -461,8 +745,8 @@ final class AdminPage {
 				<?php elseif ( $historical_count > 0 ) : ?>
 					<p>
 						<?php
-						/* translators: %d: Number of critical findings in older log history. */
-						echo esc_html( sprintf( _n( '%d older fatal-error group is available in the collapsed history. It is not active in the current review window.', '%d older fatal-error groups are available in the collapsed history. They are not active in the current review window.', $historical_count, 'presscare-ai-error-doctor' ), $historical_count ) );
+						/* translators: %d: Number of past fatal-error records in older log history. */
+						echo esc_html( sprintf( _n( '%d past fatal-error record is available in the collapsed history. It is not an active problem.', '%d past fatal-error records are available in the collapsed history. They are not active problems.', $historical_count, 'presscare-ai-error-doctor' ), $historical_count ) );
 						?>
 					</p>
 					<nav class="pcaied-critical-links pcaied-critical-links-history" aria-label="<?php esc_attr_e( 'Jump to historical critical findings', 'presscare-ai-error-doctor' ); ?>">
@@ -553,16 +837,19 @@ final class AdminPage {
 	private function render_finding( array $group, int $window_days, bool $handled = false ): void {
 		$fingerprint      = sanitize_key( (string) ( $group['fingerprint'] ?? '' ) );
 		$severity         = sanitize_key( (string) ( $group['severity'] ?? 'info' ) );
-		$severity_label   = 'critical' === $severity ? __( 'Critical error', 'presscare-ai-error-doctor' ) : ucfirst( $severity );
+		$recent_count     = (int) ( $group['recent_count'] ?? 0 );
+		$historical_count = (int) ( $group['historical_count'] ?? 0 );
+		$undated_count    = (int) ( $group['undated_count'] ?? 0 );
+		$is_active_fatal  = 'critical' === $severity && $recent_count > 0 && ! $handled;
+		$is_past_fatal    = 'critical' === $severity && 0 === $recent_count && 0 === $undated_count;
+		$severity_style   = $is_active_fatal ? 'critical-active' : ( $is_past_fatal ? 'critical-history' : ( 'critical' === $severity ? 'critical-undated' : $severity ) );
+		$severity_label   = $is_active_fatal ? __( 'Critical · active now', 'presscare-ai-error-doctor' ) : ( $is_past_fatal ? __( 'Past fatal error', 'presscare-ai-error-doctor' ) : ( 'critical' === $severity ? __( 'Fatal error · check date', 'presscare-ai-error-doctor' ) : ucfirst( $severity ) ) );
 		$priority         = $handled ? array(
 			'key'   => 'handled',
 			'label' => __( 'Handled', 'presscare-ai-error-doctor' ),
 		) : $this->finding_priority( $group );
 		$title            = $this->finding_title( $group );
 		$occurrence_count = (int) ( $group['count'] ?? 0 );
-		$recent_count     = (int) ( $group['recent_count'] ?? 0 );
-		$historical_count = (int) ( $group['historical_count'] ?? 0 );
-		$undated_count    = (int) ( $group['undated_count'] ?? 0 );
 		$resolution_id    = 'pcaied-resolution-' . $fingerprint;
 		$technical_id     = 'pcaied-technical-' . $fingerprint;
 		$finding_id       = 'pcaied-finding-' . $fingerprint;
@@ -581,15 +868,21 @@ final class AdminPage {
 		/* translators: %s: Date when the finding last occurred. */
 		$last_seen_label = sprintf( __( 'Last seen %s', 'presscare-ai-error-doctor' ), $this->format_timestamp( $group['last_seen'] ?? null, true ) );
 		?>
-		<article id="<?php echo esc_attr( $finding_id ); ?>" class="pcaied-finding pcaied-finding-<?php echo esc_attr( $priority['key'] ); ?> pcaied-finding-severity-<?php echo esc_attr( $severity ); ?>" tabindex="-1">
+		<article id="<?php echo esc_attr( $finding_id ); ?>" class="pcaied-finding pcaied-finding-<?php echo esc_attr( $priority['key'] ); ?> pcaied-finding-severity-<?php echo esc_attr( $severity_style ); ?>" tabindex="-1">
 			<div class="pcaied-finding-heading">
 				<div class="pcaied-finding-title-row">
 					<span class="pcaied-priority pcaied-priority-<?php echo esc_attr( $priority['key'] ); ?>"><?php echo esc_html( $priority['label'] ); ?></span>
-					<span class="pcaied-badge pcaied-<?php echo esc_attr( $severity ); ?>"><?php echo esc_html( $severity_label ); ?></span>
+					<span class="pcaied-badge pcaied-<?php echo esc_attr( $severity_style ); ?>"><?php echo esc_html( $severity_label ); ?></span>
 				</div>
 				<span class="pcaied-occurrences"><?php echo esc_html( $occurrence_label ); ?></span>
 			</div>
+			<?php if ( $is_active_fatal ) : ?>
+				<p class="pcaied-finding-label"><?php esc_html_e( 'What happened', 'presscare-ai-error-doctor' ); ?></p>
+			<?php endif; ?>
 			<h4><?php echo esc_html( $title ); ?></h4>
+			<?php if ( $is_active_fatal ) : ?>
+				<p class="pcaied-finding-label"><?php esc_html_e( 'Why it matters', 'presscare-ai-error-doctor' ); ?></p>
+			<?php endif; ?>
 			<p class="pcaied-finding-explanation"><?php echo esc_html( $this->finding_explanation( $group, $window_days ) ); ?></p>
 			<div class="pcaied-finding-timing">
 				<?php if ( $recent_count > 0 ) : ?>
@@ -604,7 +897,7 @@ final class AdminPage {
 				<span><?php echo esc_html( $last_seen_label ); ?></span>
 			</div>
 			<div class="pcaied-finding-actions">
-				<button type="button" class="button button-primary" data-pcaied-toggle="<?php echo esc_attr( $resolution_id ); ?>" data-label-open="<?php esc_attr_e( 'Hide resolution steps', 'presscare-ai-error-doctor' ); ?>" data-label-closed="<?php esc_attr_e( 'Resolution steps', 'presscare-ai-error-doctor' ); ?>" aria-controls="<?php echo esc_attr( $resolution_id ); ?>" aria-expanded="false"><?php esc_html_e( 'Resolution steps', 'presscare-ai-error-doctor' ); ?></button>
+				<button type="button" class="button button-primary" data-pcaied-toggle="<?php echo esc_attr( $resolution_id ); ?>" data-label-open="<?php esc_attr_e( 'Hide resolution steps', 'presscare-ai-error-doctor' ); ?>" data-label-closed="<?php esc_attr_e( 'Resolution steps', 'presscare-ai-error-doctor' ); ?>" aria-controls="<?php echo esc_attr( $resolution_id ); ?>" aria-expanded="<?php echo esc_attr( $is_active_fatal ? 'true' : 'false' ); ?>"><?php echo esc_html( $is_active_fatal ? __( 'Hide resolution steps', 'presscare-ai-error-doctor' ) : __( 'Resolution steps', 'presscare-ai-error-doctor' ) ); ?></button>
 				<button type="button" class="button" data-pcaied-ai-fingerprint="<?php echo esc_attr( $fingerprint ); ?>" data-pcaied-ai-title="<?php echo esc_attr( $title ); ?>"><?php esc_html_e( 'Ask PressCare AI', 'presscare-ai-error-doctor' ); ?></button>
 				<a class="button pcaied-support-button" href="<?php echo esc_url( $support_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Get expert help', 'presscare-ai-error-doctor' ); ?></a>
 				<button type="button" class="button" data-pcaied-toggle="<?php echo esc_attr( $technical_id ); ?>" data-label-open="<?php esc_attr_e( 'Hide technical details', 'presscare-ai-error-doctor' ); ?>" data-label-closed="<?php esc_attr_e( 'Technical details', 'presscare-ai-error-doctor' ); ?>" aria-controls="<?php echo esc_attr( $technical_id ); ?>" aria-expanded="false"><?php esc_html_e( 'Technical details', 'presscare-ai-error-doctor' ); ?></button>
@@ -616,8 +909,8 @@ final class AdminPage {
 					<button type="submit" class="button pcaied-handle-button"><?php echo esc_html( $handled ? __( 'Return to review', 'presscare-ai-error-doctor' ) : __( 'Mark handled', 'presscare-ai-error-doctor' ) ); ?></button>
 				</form>
 			</div>
-			<div id="<?php echo esc_attr( $resolution_id ); ?>" class="pcaied-resolution" hidden>
-				<h5><?php esc_html_e( 'A safe path toward resolution', 'presscare-ai-error-doctor' ); ?></h5>
+			<div id="<?php echo esc_attr( $resolution_id ); ?>" class="pcaied-resolution"<?php if ( ! $is_active_fatal ) : ?> hidden<?php endif; ?>>
+				<h5><?php echo esc_html( $is_active_fatal ? __( 'How to handle it safely', 'presscare-ai-error-doctor' ) : __( 'A safe path toward resolution', 'presscare-ai-error-doctor' ) ); ?></h5>
 				<ol>
 					<?php foreach ( $this->resolution_steps( $group ) as $step ) : ?>
 						<li><?php echo esc_html( $step ); ?></li>
@@ -756,7 +1049,7 @@ final class AdminPage {
 			if ( 'critical' === $severity ) {
 				return array(
 					'key'   => 'urgent',
-					'label' => __( 'Urgent', 'presscare-ai-error-doctor' ),
+					'label' => __( 'Act now', 'presscare-ai-error-doctor' ),
 				);
 			}
 			if ( 'error' === $severity ) {
@@ -813,6 +1106,10 @@ final class AdminPage {
 		$recent   = (int) ( $group['recent_count'] ?? 0 );
 		$undated  = (int) ( $group['undated_count'] ?? 0 );
 
+		if ( 'critical' === $severity && 0 === $recent && 0 === $undated ) {
+			return __( 'This is a past fatal-error record, not evidence that the site is failing now. Do not change the site solely because this older entry exists. Revisit it only if a fresh scan records a new occurrence.', 'presscare-ai-error-doctor' );
+		}
+
 		if ( $recent > 0 ) {
 			$timing = sprintf(
 				/* translators: 1: Number of recent occurrences, 2: Number of days in the recent window. */
@@ -842,22 +1139,59 @@ final class AdminPage {
 	 */
 	private function resolution_steps( array $group ): array {
 		$type           = sanitize_key( (string) ( $group['component_type'] ?? 'unknown' ) );
+		$severity       = sanitize_key( (string) ( $group['severity'] ?? 'info' ) );
 		$recent         = (int) ( $group['recent_count'] ?? 0 );
+		$undated        = (int) ( $group['undated_count'] ?? 0 );
 		$component_name = $this->component_name( $group );
 		$steps          = array();
+		$is_historical  = 0 === $recent && 0 === $undated;
+
+		if ( $is_historical ) {
+			$steps[] = __( 'No immediate change is recommended. This entry is outside the current review window and may describe a problem that was already resolved.', 'presscare-ai-error-doctor' );
+
+			if ( 'plugin' === $type || 'theme' === $type ) {
+				$steps[] = sprintf(
+					/* translators: %s: Plugin or theme name inferred from the log path. */
+					__( 'Do not update or change %s solely because of this older record. If a fresh scan shows a new occurrence, back up first and reproduce the issue on staging.', 'presscare-ai-error-doctor' ),
+					$component_name
+				);
+			} elseif ( 'core' === $type ) {
+				$steps[] = __( 'Do not edit WordPress core. If this returns in a fresh scan, update WordPress and extensions on staging and identify which request triggered it.', 'presscare-ai-error-doctor' );
+			} else {
+				$steps[] = __( 'If this returns in a fresh scan, use Technical details to identify the responsible extension before changing code or database settings.', 'presscare-ai-error-doctor' );
+			}
+
+			$steps[] = __( 'If the site is working and no new occurrence appears, leave this in Older log history or mark it handled. No repair is required for the log entry itself.', 'presscare-ai-error-doctor' );
+
+			return $steps;
+		}
 
 		if ( $recent > 0 ) {
 			$steps[] = __( 'Reproduce the related action on staging and note exactly what the user or scheduled task was doing.', 'presscare-ai-error-doctor' );
 		} else {
-			$steps[] = __( 'Confirm the event has not returned recently. If the site is behaving normally, an old entry may require no repair.', 'presscare-ai-error-doctor' );
+			$steps[] = __( 'The event has no usable date. Run a fresh scan after reproducing the related action so the plugin can confirm whether it is current.', 'presscare-ai-error-doctor' );
 		}
 
 		if ( 'plugin' === $type || 'theme' === $type ) {
-			$steps[] = sprintf(
-				/* translators: %s: Plugin or theme name inferred from the log path. */
-				__( 'Back up first, then update or test %s on staging. If the event returns, share the finding ID with its developer.', 'presscare-ai-error-doctor' ),
-				$component_name
-			);
+			if ( 'critical' === $severity && $recent > 0 ) {
+				$steps[] = sprintf(
+					/* translators: %s: Plugin or theme name inferred from the log path. */
+					__( 'Because this is an active fatal error, back up first and test the current supported version of %s on staging. Record the action that triggers it and keep the finding ID for support.', 'presscare-ai-error-doctor' ),
+					$component_name
+				);
+			} elseif ( 'warning' === $severity ) {
+				$steps[] = sprintf(
+					/* translators: %s: Plugin or theme name inferred from the log path. */
+					__( 'This is a warning, not a site-stopping fatal error. Do not change %s solely because the warning exists. If it repeats during a related action or matches a visible problem, back up and test the current supported version on staging.', 'presscare-ai-error-doctor' ),
+					$component_name
+				);
+			} else {
+				$steps[] = sprintf(
+					/* translators: %s: Plugin or theme name inferred from the log path. */
+					__( 'Confirm that this error matches a visible problem before changing %s. If it does, back up and test the current supported version on staging.', 'presscare-ai-error-doctor' ),
+					$component_name
+				);
+			}
 		} elseif ( 'core' === $type ) {
 			$steps[] = __( 'Confirm WordPress and all extensions are current. A core file can be where a warning surfaced even when a plugin triggered it.', 'presscare-ai-error-doctor' );
 		} else {
@@ -1028,7 +1362,7 @@ final class AdminPage {
 		<?php
 	}
 
-	private function metric( string $label, int $value, string $severity, string $context ): void {
+	private function metric( string $label, int|string $value, string $severity, string $context ): void {
 		?>
 		<div class="pcaied-metric pcaied-metric-<?php echo esc_attr( $severity ); ?>">
 			<strong><?php echo esc_html( (string) $value ); ?></strong>
@@ -1084,6 +1418,16 @@ final class AdminPage {
 			<input type="hidden" name="action" value="<?php echo esc_attr( $action ); ?>">
 			<?php wp_nonce_field( $action ); ?>
 			<button type="submit" class="<?php echo esc_attr( $css_class ); ?>"><?php echo esc_html( $label ); ?></button>
+		</form>
+		<?php
+	}
+
+	private function printable_report_form( string $css_class = 'button' ): void {
+		?>
+		<form class="pcaied-inline-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" target="_blank">
+			<input type="hidden" name="action" value="pcaied_print">
+			<?php wp_nonce_field( 'pcaied_print' ); ?>
+			<button type="submit" class="<?php echo esc_attr( $css_class ); ?>"><?php esc_html_e( 'View / save as PDF', 'presscare-ai-error-doctor' ); ?></button>
 		</form>
 		<?php
 	}

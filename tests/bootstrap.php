@@ -110,6 +110,21 @@ if ( ! function_exists( 'wp_date' ) ) {
 	}
 }
 
+if ( ! function_exists( 'size_format' ) ) {
+	function size_format( int $bytes ): string {
+		return $bytes . ' B';
+	}
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * @return mixed
+	 */
+	function get_option( string $name, mixed $default = false ) {
+		return $default;
+	}
+}
+
 require_once dirname( __DIR__ ) . '/src/Privacy/Redactor.php';
 require_once dirname( __DIR__ ) . '/src/Diagnostics/LogParser.php';
 require_once dirname( __DIR__ ) . '/src/AI/Analyzer.php';

@@ -2,6 +2,15 @@
 
 All notable changes to PressCare AI Error Doctor are documented here.
 
+## 1.1.2 - 2026-07-18
+
+- Changed the summary metrics to count only events from the current seven-day review window.
+- Moved active fatal errors into a dedicated first section with the explanation and safe next steps expanded by default.
+- Restyled historical fatal events as neutral Past fatal error records and removed immediate-update advice from old findings.
+- Added severity-aware resolution guidance so a warning does not read like a site-stopping emergency.
+- Added a plain-language explanation of the configured PHP log source and read-only translation process.
+- Added a sanitized print view that administrators can print or save as PDF without exposing the raw log or server path.
+
 ## 1.1.1 - 2026-07-18
 
 - Added a prominent status panel that identifies current critical findings and links directly to each card.
