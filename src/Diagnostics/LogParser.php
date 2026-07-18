@@ -26,9 +26,9 @@ final class LogParser {
 	 * @return array{events_total:int,groups:array<int,array<string,mixed>>,counts:array<string,int>}
 	 */
 	public function parse( string $content ): array {
-		$events  = $this->extract_events( $content );
-		$groups  = array();
-		$counts  = array_fill_keys( array( 'critical', 'error', 'warning', 'info' ), 0 );
+		$events = $this->extract_events( $content );
+		$groups = array();
+		$counts = array_fill_keys( array( 'critical', 'error', 'warning', 'info' ), 0 );
 
 		foreach ( $events as $event ) {
 			$severity    = $this->classify_severity( $event );
@@ -41,20 +41,20 @@ final class LogParser {
 
 			if ( ! isset( $groups[ $fingerprint ] ) ) {
 				$groups[ $fingerprint ] = array(
-					'fingerprint'      => $fingerprint,
-					'severity'         => $severity,
-					'component_type'   => $component['type'],
-					'component_slug'   => $component['slug'],
-					'count'            => 0,
-					'first_seen'       => $timestamp,
-					'last_seen'        => $timestamp,
-					'sample'           => $this->redactor->redact( $this->limit_sample( $event ) ),
+					'fingerprint'    => $fingerprint,
+					'severity'       => $severity,
+					'component_type' => $component['type'],
+					'component_slug' => $component['slug'],
+					'count'          => 0,
+					'first_seen'     => $timestamp,
+					'last_seen'      => $timestamp,
+					'sample'         => $this->redactor->redact( $this->limit_sample( $event ) ),
 				);
 			}
 
 			++$groups[ $fingerprint ]['count'];
 			if ( null !== $timestamp ) {
-				$groups[ $fingerprint ]['last_seen'] ??= $timestamp;
+				$groups[ $fingerprint ]['last_seen']  ??= $timestamp;
 				$groups[ $fingerprint ]['first_seen'] ??= $timestamp;
 				if ( $timestamp > $groups[ $fingerprint ]['last_seen'] ) {
 					$groups[ $fingerprint ]['last_seen'] = $timestamp;
@@ -69,8 +69,15 @@ final class LogParser {
 		usort(
 			$groups,
 			static function ( array $a, array $b ): int {
-				$rank = array( 'critical' => 4, 'error' => 3, 'warning' => 2, 'info' => 1 );
-				return ( $rank[ $b['severity'] ] <=> $rank[ $a['severity'] ] ) ?: ( $b['count'] <=> $a['count'] );
+				$rank                = array(
+					'critical' => 4,
+					'error'    => 3,
+					'warning'  => 2,
+					'info'     => 1,
+				);
+				$severity_comparison = $rank[ $b['severity'] ] <=> $rank[ $a['severity'] ];
+
+				return 0 !== $severity_comparison ? $severity_comparison : ( $b['count'] <=> $a['count'] );
 			}
 		);
 
@@ -85,7 +92,8 @@ final class LogParser {
 	 * @return string[]
 	 */
 	private function extract_events( string $content ): array {
-		$lines   = preg_split( '/\R/', $content ) ?: array();
+		$lines   = preg_split( '/\R/', $content );
+		$lines   = is_array( $lines ) ? $lines : array();
 		$events  = array();
 		$current = '';
 
@@ -153,15 +161,24 @@ final class LogParser {
 
 		foreach ( $patterns as $type => $pattern ) {
 			if ( preg_match( $pattern, $normalized, $matches ) ) {
-				return array( 'type' => $type, 'slug' => sanitize_key( $matches[1] ) );
+				return array(
+					'type' => $type,
+					'slug' => sanitize_key( $matches[1] ),
+				);
 			}
 		}
 
 		if ( preg_match( '#/wp-(?:admin|includes)/#i', $normalized ) ) {
-			return array( 'type' => 'core', 'slug' => 'wordpress-core' );
+			return array(
+				'type' => 'core',
+				'slug' => 'wordpress-core',
+			);
 		}
 
-		return array( 'type' => 'unknown', 'slug' => 'unknown' );
+		return array(
+			'type' => 'unknown',
+			'slug' => 'unknown',
+		);
 	}
 
 	private function normalize_message( string $event ): string {
@@ -183,7 +200,7 @@ final class LogParser {
 	}
 
 	private function limit_sample( string $event ): string {
-		if ( str_contains( strtolower( $event ), 'wordpress database error' ) ) {
+		if ( str_contains( strtolower( $event ), 'wordpress database error' ) ) { // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Lowercase comparison value.
 			$event = preg_replace(
 				'/\s+for query\s+.*?(?=\s+made by\s+|$)/is',
 				' for query [database-query-redacted]',
@@ -191,7 +208,8 @@ final class LogParser {
 			) ?? $event;
 		}
 
-		$lines = array_slice( preg_split( '/\R/', $event ) ?: array(), 0, 8 );
+		$lines  = preg_split( '/\R/', $event );
+		$lines  = is_array( $lines ) ? array_slice( $lines, 0, 8 ) : array();
 		$sample = implode( "\n", $lines );
 		return function_exists( 'mb_substr' ) ? mb_substr( $sample, 0, 2000 ) : substr( $sample, 0, 2000 );
 	}

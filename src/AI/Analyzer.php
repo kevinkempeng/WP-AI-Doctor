@@ -49,7 +49,7 @@ final class Analyzer {
 			);
 		}
 
-		$payload = $this->redactor->redact_value(
+		$payload      = $this->redactor->redact_value(
 			array(
 				'environment' => $report['environment'] ?? array(),
 				'summary'     => $report['summary'] ?? array(),
@@ -180,18 +180,18 @@ final class Analyzer {
 						'type'                 => 'object',
 						'additionalProperties' => false,
 						'properties'           => array(
-							'fingerprint'            => array(
+							'fingerprint'             => array(
 								'type' => 'string',
 								'enum' => $fingerprints,
 							),
-							'title'                  => array( 'type' => 'string' ),
-							'explanation'            => array( 'type' => 'string' ),
-							'likely_cause'           => array( 'type' => 'string' ),
-							'recommended_steps'      => array(
+							'title'                   => array( 'type' => 'string' ),
+							'explanation'             => array( 'type' => 'string' ),
+							'likely_cause'            => array( 'type' => 'string' ),
+							'recommended_steps'       => array(
 								'type'  => 'array',
 								'items' => array( 'type' => 'string' ),
 							),
-							'confidence'             => array(
+							'confidence'              => array(
 								'type' => 'string',
 								'enum' => array( 'high', 'medium', 'low' ),
 							),

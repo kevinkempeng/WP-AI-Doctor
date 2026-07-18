@@ -221,11 +221,19 @@ final class AdminPage {
 			<?php else : ?>
 				<div class="pcaied-findings">
 					<?php foreach ( $groups as $group ) : ?>
+						<?php
+						$occurrence_count = (int) ( $group['count'] ?? 0 );
+						$occurrence_label = sprintf(
+							/* translators: %d: Number of occurrences for the grouped error. */
+							_n( '%d occurrence', '%d occurrences', $occurrence_count, 'presscare-ai-error-doctor' ),
+							$occurrence_count
+						);
+						?>
 						<article class="pcaied-finding">
 							<div class="pcaied-finding-heading">
 								<span class="pcaied-badge pcaied-<?php echo esc_attr( sanitize_key( (string) ( $group['severity'] ?? 'info' ) ) ); ?>"><?php echo esc_html( ucfirst( (string) ( $group['severity'] ?? 'info' ) ) ); ?></span>
 								<strong><?php echo esc_html( (string) ( $group['component_type'] ?? 'unknown' ) . ': ' . (string) ( $group['component_slug'] ?? 'unknown' ) ); ?></strong>
-								<span><?php echo esc_html( sprintf( _n( '%d occurrence', '%d occurrences', (int) ( $group['count'] ?? 0 ), 'presscare-ai-error-doctor' ), (int) ( $group['count'] ?? 0 ) ) ); ?></span>
+								<span><?php echo esc_html( $occurrence_label ); ?></span>
 							</div>
 							<pre><?php echo esc_html( (string) ( $group['sample'] ?? '' ) ); ?></pre>
 							<small><?php echo esc_html( 'ID ' . (string) ( $group['fingerprint'] ?? '' ) ); ?></small>
@@ -272,6 +280,8 @@ final class AdminPage {
 	private function render_ai_report( array $analysis ): void {
 		$severity = sanitize_key( (string) ( $analysis['overall_severity'] ?? 'info' ) );
 		$findings = isset( $analysis['findings'] ) && is_array( $analysis['findings'] ) ? $analysis['findings'] : array();
+		/* translators: 1: AI confidence level, 2: Local diagnostic finding ID. */
+		$confidence_label = __( 'Confidence: %1$s · Finding ID: %2$s', 'presscare-ai-error-doctor' );
 		?>
 		<section class="pcaied-panel pcaied-ai-report">
 			<div class="pcaied-report-title">
@@ -292,7 +302,7 @@ final class AdminPage {
 								<?php endforeach; ?>
 							</ol>
 						<?php endif; ?>
-						<small><?php echo esc_html( sprintf( __( 'Confidence: %1$s · Finding ID: %2$s', 'presscare-ai-error-doctor' ), (string) ( $finding['confidence'] ?? 'low' ), (string) ( $finding['fingerprint'] ?? '' ) ) ); ?></small>
+						<small><?php echo esc_html( sprintf( $confidence_label, (string) ( $finding['confidence'] ?? 'low' ), (string) ( $finding['fingerprint'] ?? '' ) ) ); ?></small>
 					</article>
 				<?php endforeach; ?>
 			</div>
@@ -309,12 +319,12 @@ final class AdminPage {
 		<?php
 	}
 
-	private function action_form( string $action, string $label, string $class ): void {
+	private function action_form( string $action, string $label, string $css_class ): void {
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( $action ); ?>">
 			<?php wp_nonce_field( $action ); ?>
-			<button type="submit" class="<?php echo esc_attr( $class ); ?>"><?php echo esc_html( $label ); ?></button>
+			<button type="submit" class="<?php echo esc_attr( $css_class ); ?>"><?php echo esc_html( $label ); ?></button>
 		</form>
 		<?php
 	}

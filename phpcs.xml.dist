@@ -29,5 +29,6 @@
 	</rule>
 	<rule ref="Generic.Files.LineLength">
 		<exclude name="Generic.Files.LineLength.TooLong"/>
+		<exclude name="Generic.Files.LineLength.MaxExceeded"/>
 	</rule>
 </ruleset>

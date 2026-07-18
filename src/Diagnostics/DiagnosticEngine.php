@@ -88,16 +88,16 @@ final class DiagnosticEngine {
 		$active_plugins = (array) get_option( 'active_plugins', array() );
 
 		return array(
-			'wordpress_version'       => function_exists( 'wp_get_wp_version' ) ? wp_get_wp_version() : get_bloginfo( 'version' ),
-			'php_version'             => PHP_VERSION,
-			'multisite'               => is_multisite(),
-			'active_theme'            => $theme->get( 'Name' ),
-			'active_theme_version'    => $theme->get( 'Version' ),
-			'active_plugins_count'    => count( $active_plugins ),
-			'plugin_updates_count'    => $update_count,
-			'wp_debug'                => defined( 'WP_DEBUG' ) && true === WP_DEBUG,
-			'wp_debug_log'            => defined( 'WP_DEBUG_LOG' ) && false !== WP_DEBUG_LOG,
-			'ai_client_available'     => function_exists( 'wp_ai_client_prompt' ),
+			'wordpress_version'    => function_exists( 'wp_get_wp_version' ) ? wp_get_wp_version() : get_bloginfo( 'version' ),
+			'php_version'          => PHP_VERSION,
+			'multisite'            => is_multisite(),
+			'active_theme'         => $theme->get( 'Name' ),
+			'active_theme_version' => $theme->get( 'Version' ),
+			'active_plugins_count' => count( $active_plugins ),
+			'plugin_updates_count' => $update_count,
+			'wp_debug'             => defined( 'WP_DEBUG' ) && true === WP_DEBUG,
+			'wp_debug_log'         => defined( 'WP_DEBUG_LOG' ) && false !== WP_DEBUG_LOG,
+			'ai_client_available'  => function_exists( 'wp_ai_client_prompt' ),
 		);
 	}
 }

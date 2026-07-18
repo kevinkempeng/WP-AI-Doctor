@@ -20,12 +20,12 @@ final class Autoloader {
 		spl_autoload_register( array( self::class, 'load' ) );
 	}
 
-	private static function load( string $class ): void {
-		if ( ! str_starts_with( $class, self::PREFIX ) ) {
+	private static function load( string $class_name ): void {
+		if ( ! str_starts_with( $class_name, self::PREFIX ) ) {
 			return;
 		}
 
-		$relative = substr( $class, strlen( self::PREFIX ) );
+		$relative = substr( $class_name, strlen( self::PREFIX ) );
 		$file     = PCAIED_DIR . '/src/' . str_replace( '\\', '/', $relative ) . '.php';
 
 		if ( is_readable( $file ) ) {
@@ -33,4 +33,3 @@ final class Autoloader {
 		}
 	}
 }
-

@@ -18,14 +18,14 @@ final class Redactor {
 		$value = $this->redact_paths( $value );
 
 		$patterns = array(
-			'/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/i'                                               => 'Bearer [redacted]',
-			'/\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{16,}\b/'                                       => '[api-key-redacted]',
-			'/\bAIza[0-9A-Za-z_-]{20,}\b/'                                                     => '[api-key-redacted]',
-			'/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/'                => '[jwt-redacted]',
-			'/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i'                                     => '[email-redacted]',
-			'/(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])/'                                   => '[ip-redacted]',
+			'/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/i'          => 'Bearer [redacted]',
+			'/\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{16,}\b/'   => '[api-key-redacted]',
+			'/\bAIza[0-9A-Za-z_-]{20,}\b/'                 => '[api-key-redacted]',
+			'/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/' => '[jwt-redacted]',
+			'/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i' => '[email-redacted]',
+			'/(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])/' => '[ip-redacted]',
 			'/((?:api[_ -]?key|access[_ -]?token|secret|password|authorization)\s*[:=]\s*)[^\s&,;]+/i' => '$1[redacted]',
-			'/([?&](?:key|api_key|token|secret|password|auth)=)[^&#\s]+/i'                       => '$1[redacted]',
+			'/([?&](?:key|api_key|token|secret|password|auth)=)[^&#\s]+/i' => '$1[redacted]',
 		);
 
 		$redacted = preg_replace( array_keys( $patterns ), array_values( $patterns ), $value );
@@ -60,7 +60,7 @@ final class Redactor {
 			$paths[ wp_normalize_path( WP_CONTENT_DIR ) ] = '[wp-content]';
 		}
 		if ( defined( 'ABSPATH' ) ) {
-			$paths[ wp_normalize_path( ABSPATH ) ] = '[wordpress]/';
+			$paths[ wp_normalize_path( ABSPATH ) ] = '[wordpress]/'; // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Stable internal redaction token.
 		}
 
 		$normalized = wp_normalize_path( $value );
