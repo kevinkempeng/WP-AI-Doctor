@@ -3,7 +3,7 @@ Tags: ai, debug, diagnostics, error log, site health
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -101,6 +101,11 @@ After the plugin is listed, use its WordPress.org support forum for ordinary sup
 The complete source code, build script, automated tests, and development documentation are maintained at https://github.com/kevinkempeng/WP-AI-Doctor.
 
 == Changelog ==
+
+= 1.0.2 =
+
+* Fixed text-generation provider detection for capabilities exposed dynamically by the WordPress AI Client.
+* Added regression coverage for supported and unsupported provider responses.
 
 = 1.0.1 =
 

@@ -2,7 +2,7 @@
 
 PressCare AI Error Doctor is an original, read-only WordPress diagnostics plugin by **Kevin Kemp - PressCare**. It groups noisy PHP and WordPress errors, removes sensitive data, and uses the provider-independent AI Client in WordPress 7.0 to generate cautious, structured explanations.
 
-Version `1.0.1` is the current staging release. The plugin is not a fork and contains no inherited plugin code or branding.
+Version `1.0.2` is the current staging release. The plugin is not a fork and contains no inherited plugin code or branding.
 
 ## Compatibility
 
@@ -14,7 +14,7 @@ Version `1.0.1` is the current staging release. The plugin is not a fork and con
 
 WordPress 7.0 is intentional: it supplies the stable, provider-independent AI Client and Connectors credential interface. Requiring PHP 8.0 provides modern language features without limiting the plugin to only the newest hosting platforms.
 
-## Version 1.0.1 scope
+## Version 1.0.2 scope
 
 1. Locate a configured WordPress or PHP error log.
 2. Read only the final 2 MB.

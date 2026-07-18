@@ -33,7 +33,7 @@ final class Analyzer {
 
 		try {
 			$builder = wp_ai_client_prompt();
-			return method_exists( $builder, 'is_supported_for_text_generation' ) && $builder->is_supported_for_text_generation();
+			return true === $builder->is_supported_for_text_generation();
 		} catch ( Throwable ) {
 			return false;
 		}

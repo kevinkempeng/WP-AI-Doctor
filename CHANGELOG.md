@@ -2,6 +2,11 @@
 
 All notable changes to PressCare AI Error Doctor are documented here.
 
+## 1.0.2 - 2026-07-18
+
+- Fixed text-generation provider detection for methods exposed dynamically by the WordPress AI Client.
+- Added regression coverage for supported and unsupported provider capability responses.
+
 ## 1.0.1 - 2026-07-18
 
 - Added recent, historical, and undated event classification with human-readable date guidance.

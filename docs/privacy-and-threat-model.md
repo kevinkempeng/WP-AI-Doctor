@@ -10,7 +10,7 @@
 - Passwords and values labeled as keys, secrets, authentication, or authorization data.
 - Raw error-log content.
 
-## Controls in version 1.0.1
+## Controls in version 1.0.2
 
 - Reads no more than 2 MB from the end of a local file.
 - Never accepts a log path from an HTTP request.

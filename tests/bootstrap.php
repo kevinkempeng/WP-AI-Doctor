@@ -37,4 +37,4 @@ if ( ! function_exists( 'sanitize_key' ) ) {
 
 require_once dirname( __DIR__ ) . '/src/Privacy/Redactor.php';
 require_once dirname( __DIR__ ) . '/src/Diagnostics/LogParser.php';
-
+require_once dirname( __DIR__ ) . '/src/AI/Analyzer.php';
