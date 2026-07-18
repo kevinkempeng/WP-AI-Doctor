@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<ruleset name="PressCare AI Error Doctor">
+	<description>WordPress coding standards for PressCare AI Error Doctor.</description>
+
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg name="extensions" value="php"/>
+	<arg value="sp"/>
+
+	<config name="minimum_supported_wp_version" value="7.0"/>
+
+	<file>presscare-ai-error-doctor.php</file>
+	<file>src</file>
+	<file>uninstall.php</file>
+
+	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>tests/*</exclude-pattern>
+
+	<rule ref="WordPress-Extra"/>
+
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<exclude-pattern>src/Diagnostics/LogLocator.php</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.NoSilencedErrors">
+		<exclude-pattern>src/Diagnostics/LogLocator.php</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>src/*</exclude-pattern>
+	</rule>
+	<rule ref="Generic.Files.LineLength">
+		<exclude name="Generic.Files.LineLength.TooLong"/>
+	</rule>
+</ruleset>

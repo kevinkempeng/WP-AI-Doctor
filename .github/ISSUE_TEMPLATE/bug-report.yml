@@ -1,0 +1,71 @@
+name: Bug report
+description: Report a reproducible problem in PressCare AI Error Doctor.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve PressCare AI Error Doctor. Do not paste API keys, credentials, raw production logs, customer data, or full server paths.
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: wordpress
+    attributes:
+      label: WordPress version
+      placeholder: 7.0.2
+    validations:
+      required: true
+  - type: input
+    id: php
+    attributes:
+      label: PHP version
+      placeholder: 8.3
+    validations:
+      required: true
+  - type: dropdown
+    id: multisite
+    attributes:
+      label: Multisite
+      options:
+        - "No"
+        - "Yes"
+        - "Unsure"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Explain the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Click …
+        3. Observe …
+    validations:
+      required: true
+  - type: textarea
+    id: sanitized-output
+    attributes:
+      label: Sanitized error or output
+      description: Remove credentials, personal data, raw production logs, and full filesystem paths before posting.
+      render: shell
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data-safety confirmation
+      options:
+        - label: I removed credentials, personal data, raw production logs, and full server paths.
+          required: true

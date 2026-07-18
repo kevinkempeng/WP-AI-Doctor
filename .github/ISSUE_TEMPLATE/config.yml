@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private or security-sensitive report
+    url: https://presscare.com/contact/
+    about: Use this channel when a report should not be public. Never include credentials or raw production logs.

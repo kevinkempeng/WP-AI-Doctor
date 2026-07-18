@@ -1,0 +1,14 @@
+/.git
+/.github
+/.gitignore
+/CONTRIBUTING.md
+/SECURITY.md
+/build.sh
+/composer.json
+/composer.lock
+/docs
+/phpcs.xml.dist
+/phpunit.xml.dist
+/README.md
+/tests
+/vendor
