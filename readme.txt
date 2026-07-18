@@ -91,6 +91,10 @@ Yes. Define an absolute, readable local path in `wp-config.php`:
 
 After the plugin is listed, use its WordPress.org support forum for ordinary support and feature requests. For private or security-sensitive reports that should not include production logs or credentials, contact PressCare at https://presscare.com/contact/.
 
+== Development ==
+
+The complete source code, build script, automated tests, and development documentation are maintained at https://github.com/kevinkempeng/WP-AI-Doctor.
+
 == Changelog ==
 
 = 1.0.0 =

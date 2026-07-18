@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">PressCare AI Error Doctor</title>
+  <desc id="desc">A shield with an error pulse and connected AI nodes.</desc>
+  <defs>
+    <linearGradient id="background" x1="54" y1="30" x2="458" y2="482" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20284f"/>
+      <stop offset="1" stop-color="#10152d"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="136" y1="112" x2="366" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00ffaa"/>
+      <stop offset="1" stop-color="#4ac6ff"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#background)"/>
+  <circle cx="256" cy="252" r="168" fill="none" stroke="#6646e8" stroke-opacity=".24" stroke-width="2"/>
+  <circle cx="256" cy="252" r="132" fill="#6646e8" fill-opacity=".06"/>
+  <path d="M256 93 376 139v99c0 79-48 145-120 181-72-36-120-102-120-181v-99L256 93Z" fill="#121730" stroke="url(#shield)" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M171 258h51l20-49 31 96 22-47h47" fill="none" stroke="#00ffaa" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <g fill="#f7f8ff" stroke="#6646e8" stroke-width="8">
+    <circle cx="182" cy="177" r="14"/>
+    <circle cx="330" cy="174" r="14"/>
+    <circle cx="256" cy="351" r="14"/>
+  </g>
+  <g fill="none" stroke="#6646e8" stroke-width="7" stroke-linecap="round">
+    <path d="m195 184 35 22"/>
+    <path d="m317 182-34 23"/>
+    <path d="m256 337 1-25"/>
+  </g>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1544" height="500" viewBox="0 0 1544 500" role="img" aria-labelledby="title desc">
+  <title id="title">PressCare AI Error Doctor</title>
+  <desc id="desc">A dark PressCare banner with a shield, error pulse, and AI nodes.</desc>
+  <defs>
+    <linearGradient id="background" x1="74" y1="30" x2="1475" y2="492" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20284f"/>
+      <stop offset=".56" stop-color="#121730"/>
+      <stop offset="1" stop-color="#0c1025"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="142" y1="100" x2="385" y2="404" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00ffaa"/>
+      <stop offset="1" stop-color="#4ac6ff"/>
+    </linearGradient>
+    <radialGradient id="orb">
+      <stop stop-color="#6646e8" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#6646e8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1544" height="500" fill="url(#background)"/>
+  <circle cx="215" cy="250" r="316" fill="url(#orb)"/>
+  <circle cx="1408" cy="60" r="210" fill="url(#orb)" opacity=".45"/>
+  <g opacity=".14" fill="none" stroke="#aeb5d1" stroke-width="2">
+    <path d="M0 407c197-110 335 29 528-59s374-139 604-35 311 8 412-34"/>
+    <path d="M0 446c197-110 335 29 528-59s374-139 604-35 311 8 412-34"/>
+  </g>
+  <g transform="translate(92 54)">
+    <path d="M190 20 335 76v120c0 96-58 176-145 219C103 372 45 292 45 196V76L190 20Z" fill="#121730" stroke="url(#shield)" stroke-width="17" stroke-linejoin="round"/>
+    <path d="M83 217h67l24-59 38 117 27-58h58" fill="none" stroke="#00ffaa" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    <g fill="#f7f8ff" stroke="#6646e8" stroke-width="8">
+      <circle cx="102" cy="116" r="13"/>
+      <circle cx="277" cy="113" r="13"/>
+      <circle cx="190" cy="332" r="13"/>
+    </g>
+    <g fill="none" stroke="#6646e8" stroke-width="7" stroke-linecap="round">
+      <path d="m114 123 44 27"/>
+      <path d="m265 121-43 27"/>
+      <path d="m190 319 1-30"/>
+    </g>
+  </g>
+  <g transform="translate(520 112)" font-family="DejaVu Sans, Arial, sans-serif">
+    <text x="0" y="0" fill="#00ffaa" font-size="30" font-weight="700" letter-spacing="7">PRESSCARE</text>
+    <text x="0" y="102" fill="#f7f8ff" font-size="86" font-weight="700">AI Error Doctor</text>
+    <text x="3" y="165" fill="#aeb5d1" font-size="30">Privacy-first WordPress diagnostics</text>
+    <g transform="translate(3 218)">
+      <rect width="250" height="52" rx="26" fill="#00ffaa" fill-opacity=".10" stroke="#00ffaa" stroke-opacity=".55"/>
+      <circle cx="29" cy="26" r="7" fill="#00ffaa"/>
+      <text x="49" y="35" fill="#d9fff1" font-size="22" font-weight="700">READ-ONLY BY DESIGN</text>
+    </g>
+  </g>
+</svg>

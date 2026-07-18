@@ -10,7 +10,7 @@ Version `1.0.0` is the first stable release. The plugin is not a fork and contai
 - Tested through: WordPress 7.0.x
 - PHP: 8.0 or newer
 - Recommended production PHP: 8.3
-- Planned CI matrix: PHP 8.0, 8.1, 8.2, 8.3, and 8.4
+- CI matrix: PHP 8.0, 8.1, 8.2, 8.3, and 8.4
 
 WordPress 7.0 is intentional: it supplies the stable, provider-independent AI Client and Connectors credential interface. Requiring PHP 8.0 provides modern language features without limiting the plugin to only the newest hosting platforms.
 
@@ -52,6 +52,7 @@ Build an installable ZIP:
 
 - Support: https://presscare.com/contact/
 - Author: https://presscare.com
+- Source: https://github.com/kevinkempeng/WP-AI-Doctor
 
 ## License
 

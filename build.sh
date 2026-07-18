@@ -14,8 +14,10 @@ cd "$(dirname "$project_dir")"
 zip -q -r "$output" "$project_name" \
 	-x "$project_name/.git/*" \
 		"$project_name/.github/*" \
+		"$project_name/.wordpress-org/*" \
 		"$project_name/.gitignore" \
 		"$project_name/.distignore" \
+		"$project_name/assets-src/*" \
 		"$project_name/CONTRIBUTING.md" \
 		"$project_name/SECURITY.md" \
 		"$project_name/build.sh" \

@@ -1,6 +1,7 @@
 <?php
 /**
  * Plugin Name: PressCare AI Error Doctor
+ * Plugin URI: https://github.com/kevinkempeng/WP-AI-Doctor
  * Description: Read-only WordPress error diagnostics with privacy-first, provider-independent AI explanations.
  * Version: 1.0.0
  * Requires at least: 7.0
