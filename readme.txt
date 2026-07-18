@@ -3,7 +3,7 @@ Tags: ai, debug, diagnostics, error log, site health
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,8 +19,10 @@ The local diagnostic engine:
 * Groups repeated PHP and WordPress errors by fingerprint.
 * Separates activity from the last seven days from older log history.
 * Groups current findings by component and ranks actionable activity ahead of historical context.
+* Calls out current critical findings in a prominent summary with direct jump links.
 * Provides plain-language summaries, safe resolution steps, and collapsible technical evidence.
 * Lets administrators mark findings handled; newer occurrences automatically return to the action list.
+* Offers an optional PressCare support link for each sanitized finding ID.
 * Identifies likely plugin, theme, or WordPress core ownership from file paths.
 * Removes common filesystem paths, site URLs, database identifiers, email addresses, IP addresses, access tokens, API keys, and other secrets.
 * Stores only sanitized grouped samples for the current administrator.
@@ -43,6 +45,8 @@ AI analysis is optional and happens only after an administrator checks the conse
 * Grouped error samples, fingerprints, occurrence counts, and detected component slugs.
 
 The plugin does not intentionally send raw logs, posts, visitor data, login credentials, database credentials, or AI API keys. API credentials are managed by WordPress Core through Settings > Connectors.
+
+PressCare support links are optional. When an administrator clicks a finding's support link, the browser opens presscare.com with only the sanitized finding ID, severity, and detected component slug in the URL. The plugin does not include the error sample or report, and it does not contact PressCare until the administrator clicks the link.
 
 Depending on the provider the site owner installs and configures, data may be processed by OpenAI, Anthropic, Google, or another compatible provider. Review the terms and privacy policy of the provider you choose:
 
@@ -104,6 +108,13 @@ After the plugin is listed, use its WordPress.org support forum for ordinary sup
 The complete source code, build script, automated tests, and development documentation are maintained at https://github.com/kevinkempeng/WP-AI-Doctor.
 
 == Changelog ==
+
+= 1.1.1 =
+
+* Added a prominent current-critical status panel with direct jump links to every critical card.
+* Strengthened critical-card labels, colors, and focus behavior while preserving current-first ranking.
+* Added contextual PressCare support links that carry only sanitized finding identifiers.
+* Added a clear free-guidance and optional Advanced Care support path.
 
 = 1.1.0 =
 

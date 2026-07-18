@@ -2,6 +2,13 @@
 
 All notable changes to PressCare AI Error Doctor are documented here.
 
+## 1.1.1 - 2026-07-18
+
+- Added a prominent status panel that identifies current critical findings and links directly to each card.
+- Strengthened critical-card coloring, labels, and keyboard focus behavior.
+- Added optional PressCare support links containing only the sanitized finding ID, severity, and component slug.
+- Added an unobtrusive free-guidance versus Advanced Care path on the plugin screen.
+
 ## 1.1.0 - 2026-07-18
 
 - Reorganized findings into current, historical, and handled sections ranked by actionable priority.

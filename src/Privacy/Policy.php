@@ -40,6 +40,10 @@ final class Policy {
 			. '</p>';
 
 		$content .= '<p>'
+			. esc_html__( 'If an administrator clicks a PressCare support link for a finding, the browser opens presscare.com with the sanitized finding ID, severity, and component slug in the URL. The plugin does not include an error sample or report in that support link and does not contact PressCare until the link is clicked.', 'presscare-ai-error-doctor' )
+			. '</p>';
+
+		$content .= '<p>'
 			. esc_html__( 'The stored local and AI reports, along with finding fingerprints marked handled by the administrator, remain in that administrator’s user metadata until the report is cleared or the plugin is uninstalled. Site administrators should review the privacy terms of their configured AI provider and should not enable AI analysis if their policies prohibit sending diagnostic data to that provider.', 'presscare-ai-error-doctor' )
 			. '</p>';
 

@@ -124,6 +124,7 @@ final class AdminPage {
 				<?php $this->render_summary( $report ); ?>
 				<?php $this->render_groups( $report, $handled ); ?>
 				<?php $this->render_ai_action( $report ); ?>
+				<?php $this->render_support_options(); ?>
 			<?php else : ?>
 				<section class="pcaied-panel pcaied-empty">
 					<div class="pcaied-empty-icon" aria-hidden="true">01</div>
@@ -343,13 +344,25 @@ final class AdminPage {
 			}
 		}
 
-		$current_events     = array_sum(
+		$current_events      = array_sum(
 			array_map(
 				static fn ( array $group ): int => (int) ( $group['recent_count'] ?? 0 ) + (int) ( $group['undated_count'] ?? 0 ),
 				$current_groups
 			)
 		);
-		$current_components = count( $this->group_by_component( $current_groups ) );
+		$current_components  = count( $this->group_by_component( $current_groups ) );
+		$current_critical    = array_values(
+			array_filter(
+				$current_groups,
+				static fn ( array $group ): bool => 'critical' === sanitize_key( (string) ( $group['severity'] ?? '' ) )
+			)
+		);
+		$historical_critical = array_values(
+			array_filter(
+				$historical_groups,
+				static fn ( array $group ): bool => 'critical' === sanitize_key( (string) ( $group['severity'] ?? '' ) )
+			)
+		);
 		?>
 		<section id="pcaied-action-plan" class="pcaied-panel pcaied-findings-panel">
 			<div class="pcaied-section-heading">
@@ -374,6 +387,8 @@ final class AdminPage {
 					<div><strong><?php echo esc_html( (string) $current_components ); ?></strong><span><?php esc_html_e( 'areas involved', 'presscare-ai-error-doctor' ); ?></span></div>
 					<div><strong><?php echo esc_html( (string) count( $historical_groups ) ); ?></strong><span><?php esc_html_e( 'older groups tucked away', 'presscare-ai-error-doctor' ); ?></span></div>
 				</div>
+
+				<?php $this->render_critical_status( $current_critical, $historical_critical ); ?>
 
 				<?php if ( $current_groups ) : ?>
 					<div class="pcaied-component-list">
@@ -411,6 +426,65 @@ final class AdminPage {
 				<?php endif; ?>
 			<?php endif; ?>
 		</section>
+		<?php
+	}
+
+	/**
+	 * @param array<int,array<string,mixed>> $current_groups    Current critical findings.
+	 * @param array<int,array<string,mixed>> $historical_groups Historical critical findings.
+	 */
+	private function render_critical_status( array $current_groups, array $historical_groups ): void {
+		$current_count    = count( $current_groups );
+		$historical_count = count( $historical_groups );
+		$is_active        = $current_count > 0;
+		?>
+		<section class="pcaied-critical-status <?php echo esc_attr( $is_active ? 'pcaied-critical-status-active' : 'pcaied-critical-status-clear' ); ?>" aria-labelledby="pcaied-critical-status-title">
+			<span class="pcaied-critical-status-icon" aria-hidden="true"><?php echo esc_html( $is_active ? '!' : '✓' ); ?></span>
+			<div>
+				<h3 id="pcaied-critical-status-title">
+					<?php
+					if ( $is_active ) {
+						/* translators: %d: Number of current critical findings. */
+						echo esc_html( sprintf( _n( '%d current critical finding', '%d current critical findings', $current_count, 'presscare-ai-error-doctor' ), $current_count ) );
+					} else {
+						esc_html_e( 'No current critical findings', 'presscare-ai-error-doctor' );
+					}
+					?>
+				</h3>
+				<?php if ( $is_active ) : ?>
+					<p><?php esc_html_e( 'These fatal errors can interrupt a page request or background task. They are placed first below and use a red Critical error label.', 'presscare-ai-error-doctor' ); ?></p>
+					<nav class="pcaied-critical-links" aria-label="<?php esc_attr_e( 'Jump to current critical findings', 'presscare-ai-error-doctor' ); ?>">
+						<?php foreach ( $current_groups as $group ) : ?>
+							<?php $this->critical_finding_link( $group ); ?>
+						<?php endforeach; ?>
+					</nav>
+				<?php elseif ( $historical_count > 0 ) : ?>
+					<p>
+						<?php
+						/* translators: %d: Number of critical findings in older log history. */
+						echo esc_html( sprintf( _n( '%d older fatal-error group is available in the collapsed history. It is not active in the current review window.', '%d older fatal-error groups are available in the collapsed history. They are not active in the current review window.', $historical_count, 'presscare-ai-error-doctor' ), $historical_count ) );
+						?>
+					</p>
+					<nav class="pcaied-critical-links pcaied-critical-links-history" aria-label="<?php esc_attr_e( 'Jump to historical critical findings', 'presscare-ai-error-doctor' ); ?>">
+						<?php foreach ( $historical_groups as $group ) : ?>
+							<?php $this->critical_finding_link( $group ); ?>
+						<?php endforeach; ?>
+					</nav>
+				<?php else : ?>
+					<p><?php esc_html_e( 'No fatal-error groups were found in the current scan or its older log history.', 'presscare-ai-error-doctor' ); ?></p>
+				<?php endif; ?>
+			</div>
+		</section>
+		<?php
+	}
+
+	/**
+	 * @param array<string,mixed> $group Critical finding group.
+	 */
+	private function critical_finding_link( array $group ): void {
+		$fingerprint = sanitize_key( (string) ( $group['fingerprint'] ?? '' ) );
+		?>
+		<a href="#pcaied-finding-<?php echo esc_attr( $fingerprint ); ?>" data-pcaied-jump-to="pcaied-finding-<?php echo esc_attr( $fingerprint ); ?>"><?php echo esc_html( $this->finding_title( $group ) ); ?><span aria-hidden="true">↓</span></a>
 		<?php
 	}
 
@@ -479,6 +553,7 @@ final class AdminPage {
 	private function render_finding( array $group, int $window_days, bool $handled = false ): void {
 		$fingerprint      = sanitize_key( (string) ( $group['fingerprint'] ?? '' ) );
 		$severity         = sanitize_key( (string) ( $group['severity'] ?? 'info' ) );
+		$severity_label   = 'critical' === $severity ? __( 'Critical error', 'presscare-ai-error-doctor' ) : ucfirst( $severity );
 		$priority         = $handled ? array(
 			'key'   => 'handled',
 			'label' => __( 'Handled', 'presscare-ai-error-doctor' ),
@@ -490,6 +565,8 @@ final class AdminPage {
 		$undated_count    = (int) ( $group['undated_count'] ?? 0 );
 		$resolution_id    = 'pcaied-resolution-' . $fingerprint;
 		$technical_id     = 'pcaied-technical-' . $fingerprint;
+		$finding_id       = 'pcaied-finding-' . $fingerprint;
+		$support_url      = $this->support_url( $group );
 		$occurrence_label = sprintf(
 			/* translators: %d: Number of occurrences for the grouped error. */
 			_n( '%d occurrence', '%d occurrences', $occurrence_count, 'presscare-ai-error-doctor' ),
@@ -504,11 +581,11 @@ final class AdminPage {
 		/* translators: %s: Date when the finding last occurred. */
 		$last_seen_label = sprintf( __( 'Last seen %s', 'presscare-ai-error-doctor' ), $this->format_timestamp( $group['last_seen'] ?? null, true ) );
 		?>
-		<article class="pcaied-finding pcaied-finding-<?php echo esc_attr( $priority['key'] ); ?>">
+		<article id="<?php echo esc_attr( $finding_id ); ?>" class="pcaied-finding pcaied-finding-<?php echo esc_attr( $priority['key'] ); ?> pcaied-finding-severity-<?php echo esc_attr( $severity ); ?>" tabindex="-1">
 			<div class="pcaied-finding-heading">
 				<div class="pcaied-finding-title-row">
 					<span class="pcaied-priority pcaied-priority-<?php echo esc_attr( $priority['key'] ); ?>"><?php echo esc_html( $priority['label'] ); ?></span>
-					<span class="pcaied-badge pcaied-<?php echo esc_attr( $severity ); ?>"><?php echo esc_html( ucfirst( $severity ) ); ?></span>
+					<span class="pcaied-badge pcaied-<?php echo esc_attr( $severity ); ?>"><?php echo esc_html( $severity_label ); ?></span>
 				</div>
 				<span class="pcaied-occurrences"><?php echo esc_html( $occurrence_label ); ?></span>
 			</div>
@@ -529,6 +606,7 @@ final class AdminPage {
 			<div class="pcaied-finding-actions">
 				<button type="button" class="button button-primary" data-pcaied-toggle="<?php echo esc_attr( $resolution_id ); ?>" data-label-open="<?php esc_attr_e( 'Hide resolution steps', 'presscare-ai-error-doctor' ); ?>" data-label-closed="<?php esc_attr_e( 'Resolution steps', 'presscare-ai-error-doctor' ); ?>" aria-controls="<?php echo esc_attr( $resolution_id ); ?>" aria-expanded="false"><?php esc_html_e( 'Resolution steps', 'presscare-ai-error-doctor' ); ?></button>
 				<button type="button" class="button" data-pcaied-ai-fingerprint="<?php echo esc_attr( $fingerprint ); ?>" data-pcaied-ai-title="<?php echo esc_attr( $title ); ?>"><?php esc_html_e( 'Ask PressCare AI', 'presscare-ai-error-doctor' ); ?></button>
+				<a class="button pcaied-support-button" href="<?php echo esc_url( $support_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Get expert help', 'presscare-ai-error-doctor' ); ?></a>
 				<button type="button" class="button" data-pcaied-toggle="<?php echo esc_attr( $technical_id ); ?>" data-label-open="<?php esc_attr_e( 'Hide technical details', 'presscare-ai-error-doctor' ); ?>" data-label-closed="<?php esc_attr_e( 'Technical details', 'presscare-ai-error-doctor' ); ?>" aria-controls="<?php echo esc_attr( $technical_id ); ?>" aria-expanded="false"><?php esc_html_e( 'Technical details', 'presscare-ai-error-doctor' ); ?></button>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="pcaied_review">
@@ -546,6 +624,13 @@ final class AdminPage {
 					<?php endforeach; ?>
 				</ol>
 				<p><?php esc_html_e( '“Mark handled” only organizes this report. It never changes code, settings, or the error log.', 'presscare-ai-error-doctor' ); ?></p>
+				<div class="pcaied-resolution-support">
+					<div>
+						<strong><?php esc_html_e( 'Would you like PressCare to investigate?', 'presscare-ai-error-doctor' ); ?></strong>
+						<span><?php esc_html_e( 'Open a private request with the sanitized finding ID, severity, and component included in the support link. No error sample or report is submitted automatically.', 'presscare-ai-error-doctor' ); ?></span>
+					</div>
+					<a class="button" href="<?php echo esc_url( $support_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open support request', 'presscare-ai-error-doctor' ); ?></a>
+				</div>
 			</div>
 			<div id="<?php echo esc_attr( $technical_id ); ?>" class="pcaied-technical" hidden>
 				<pre><?php echo esc_html( (string) ( $group['sample'] ?? '' ) ); ?></pre>
@@ -785,6 +870,23 @@ final class AdminPage {
 	}
 
 	/**
+	 * Creates an explicit support link containing identifiers that are already
+	 * visible in the sanitized local report. No error sample is included.
+	 *
+	 * @param array<string,mixed> $group Finding group.
+	 */
+	private function support_url( array $group ): string {
+		return add_query_arg(
+			array(
+				'finding_id' => sanitize_key( (string) ( $group['fingerprint'] ?? '' ) ),
+				'severity'   => sanitize_key( (string) ( $group['severity'] ?? 'info' ) ),
+				'component'  => sanitize_key( (string) ( $group['component_slug'] ?? 'unknown' ) ),
+			),
+			'https://presscare.com/contact/'
+		);
+	}
+
+	/**
 	 * @param array<string,mixed> $report Report data.
 	 */
 	private function render_ai_action( array $report ): void {
@@ -828,6 +930,44 @@ final class AdminPage {
 				<?php endif; ?>
 				<p class="pcaied-cost-note"><?php esc_html_e( 'Local diagnostics are free. Your selected AI provider may charge for this optional request.', 'presscare-ai-error-doctor' ); ?></p>
 			</form>
+		</section>
+		<?php
+	}
+
+	private function render_support_options(): void {
+		?>
+		<section class="pcaied-panel pcaied-care-options">
+			<div class="pcaied-section-heading">
+				<div>
+					<p class="pcaied-section-kicker"><?php esc_html_e( 'Step 4 · Optional human support', 'presscare-ai-error-doctor' ); ?></p>
+					<h2><?php esc_html_e( 'Support that scales with the problem', 'presscare-ai-error-doctor' ); ?></h2>
+					<p><?php esc_html_e( 'Start with the complete free diagnostic workflow. If the issue needs deeper investigation or implementation, PressCare can continue from the exact finding ID instead of starting over.', 'presscare-ai-error-doctor' ); ?></p>
+				</div>
+			</div>
+			<div class="pcaied-care-grid">
+				<article class="pcaied-care-card pcaied-care-free">
+					<span><?php esc_html_e( 'Included', 'presscare-ai-error-doctor' ); ?></span>
+					<h3><?php esc_html_e( 'Free plugin guidance', 'presscare-ai-error-doctor' ); ?></h3>
+					<ul>
+						<li><?php esc_html_e( 'Private local scans and priority ranking', 'presscare-ai-error-doctor' ); ?></li>
+						<li><?php esc_html_e( 'Resolution steps and technical evidence', 'presscare-ai-error-doctor' ); ?></li>
+						<li><?php esc_html_e( 'Optional focused AI explanations; provider charges may apply', 'presscare-ai-error-doctor' ); ?></li>
+						<li><?php esc_html_e( 'WordPress.org community support after listing', 'presscare-ai-error-doctor' ); ?></li>
+					</ul>
+				</article>
+				<article class="pcaied-care-card pcaied-care-advanced">
+					<span><?php esc_html_e( 'Advanced Care', 'presscare-ai-error-doctor' ); ?></span>
+					<h3><?php esc_html_e( 'Hands-on PressCare support', 'presscare-ai-error-doctor' ); ?></h3>
+					<ul>
+						<li><?php esc_html_e( 'Private review of a specific finding', 'presscare-ai-error-doctor' ); ?></li>
+						<li><?php esc_html_e( 'Staging reproduction and root-cause analysis', 'presscare-ai-error-doctor' ); ?></li>
+						<li><?php esc_html_e( 'A prioritized repair plan or implementation help', 'presscare-ai-error-doctor' ); ?></li>
+						<li><?php esc_html_e( 'Ongoing monitoring and preventive WordPress care', 'presscare-ai-error-doctor' ); ?></li>
+					</ul>
+					<a class="button button-primary" href="<?php echo esc_url( 'https://presscare.com/contact/' ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Talk with PressCare', 'presscare-ai-error-doctor' ); ?></a>
+					<small><?php esc_html_e( 'Advanced Care is a separate professional service. Scope and pricing are confirmed before any work begins.', 'presscare-ai-error-doctor' ); ?></small>
+				</article>
+			</div>
 		</section>
 		<?php
 	}

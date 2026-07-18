@@ -21,6 +21,31 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	});
 
+	document.querySelectorAll('[data-pcaied-jump-to]').forEach((link) => {
+		link.addEventListener('click', (event) => {
+			const target = document.getElementById(link.dataset.pcaiedJumpTo || '');
+			if (!target) {
+				return;
+			}
+
+			event.preventDefault();
+			let ancestor = target.parentElement;
+			while (ancestor) {
+				if (ancestor.tagName === 'DETAILS') {
+					ancestor.open = true;
+				}
+				ancestor = ancestor.parentElement;
+			}
+
+			target.classList.add('pcaied-finding-jump-highlight');
+			target.focus({ preventScroll: true });
+			target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			window.setTimeout(() => {
+				target.classList.remove('pcaied-finding-jump-highlight');
+			}, 2200);
+		});
+	});
+
 	const aiSection = document.getElementById('pcaied-ai-action');
 	const aiFingerprint = document.getElementById('pcaied-ai-fingerprint');
 	const aiSelection = document.getElementById('pcaied-ai-selection');

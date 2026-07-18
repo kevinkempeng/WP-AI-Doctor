@@ -117,6 +117,50 @@ final class AdminPageTest extends TestCase {
 		self::assertStringContainsString( '<details class="pcaied-archive">', $html );
 	}
 
+	public function test_current_critical_finding_is_prominent_and_linked_to_support(): void {
+		$report = array(
+			'summary' => array( 'recency_window_days' => 7 ),
+			'groups'  => array(
+				array(
+					'fingerprint'      => 'fatal-finding-123',
+					'severity'         => 'critical',
+					'component_type'   => 'plugin',
+					'component_slug'   => 'woocommerce-payments',
+					'count'            => 2,
+					'recent_count'     => 2,
+					'historical_count' => 0,
+					'undated_count'    => 0,
+					'first_seen'       => 100,
+					'last_seen'        => 200,
+					'sample'           => '[18-Jul-2026 08:00:44 UTC] PHP Fatal error: Payment task stopped in [plugins]/woocommerce-payments/example.php on line 10',
+				),
+			),
+		);
+
+		ob_start();
+		$this->invoke( 'render_groups', array( $report, array() ) );
+		$html = (string) ob_get_clean();
+
+		self::assertStringContainsString( '1 current critical finding', $html );
+		self::assertStringContainsString( 'data-pcaied-jump-to="pcaied-finding-fatal-finding-123"', $html );
+		self::assertStringContainsString( 'pcaied-finding-severity-critical', $html );
+		self::assertStringContainsString( 'Critical error', $html );
+		self::assertStringContainsString( 'Get expert help', $html );
+		self::assertStringContainsString( 'finding_id=fatal-finding-123', $html );
+		self::assertStringNotContainsString( 'Payment%20task%20stopped', $html );
+	}
+
+	public function test_support_options_keep_free_guidance_separate_from_advanced_care(): void {
+		ob_start();
+		$this->invoke( 'render_support_options', array() );
+		$html = (string) ob_get_clean();
+
+		self::assertStringContainsString( 'Free plugin guidance', $html );
+		self::assertStringContainsString( 'Hands-on PressCare support', $html );
+		self::assertStringContainsString( 'separate professional service', $html );
+		self::assertStringContainsString( 'Scope and pricing are confirmed before any work begins', $html );
+	}
+
 	/**
 	 * @param mixed[] $arguments Method arguments.
 	 * @return mixed

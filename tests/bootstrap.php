@@ -89,6 +89,15 @@ if ( ! function_exists( 'admin_url' ) ) {
 	}
 }
 
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * @param array<string,string> $args Query arguments.
+	 */
+	function add_query_arg( array $args, string $url ): string {
+		return $url . '?' . http_build_query( $args, '', '&', PHP_QUERY_RFC3986 );
+	}
+}
+
 if ( ! function_exists( 'wp_nonce_field' ) ) {
 	function wp_nonce_field( string $action ): void {
 		echo '<input type="hidden" name="_wpnonce" value="' . esc_attr( $action ) . '">';
