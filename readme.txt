@@ -102,3 +102,4 @@ After the plugin is listed, use its WordPress.org support forum for ordinary sup
 * Added explicit-consent AI analysis through the native WordPress 7.0 AI Client.
 * Added a read-only PressCare dashboard.
 * Added suggested site privacy-policy text for the optional AI data flow.
+* Linked AI setup to the correct WordPress 7.0 Connectors screen.

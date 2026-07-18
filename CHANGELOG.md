@@ -7,6 +7,7 @@ All notable changes to PressCare AI Error Doctor are documented here.
 - Prepared the first stable WordPress.org release.
 - Added suggested site privacy-policy text for the optional AI data flow.
 - Confirmed the distribution remains read-only and provider-independent.
+- Corrected the WordPress 7.0 Settings > Connectors admin URL.
 
 ## 0.1.0 - 2026-07-18
 

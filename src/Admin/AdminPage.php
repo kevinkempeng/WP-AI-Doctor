@@ -248,7 +248,7 @@ final class AdminPage {
 				<p class="pcaied-eyebrow"><?php esc_html_e( 'Optional AI explanation', 'presscare-ai-error-doctor' ); ?></p>
 				<h2><?php esc_html_e( 'Ask your connected provider to interpret the findings', 'presscare-ai-error-doctor' ); ?></h2>
 				<p><?php esc_html_e( 'Only the environment summary and sanitized grouped samples shown above are sent. The raw log and API credentials are not sent by this plugin.', 'presscare-ai-error-doctor' ); ?></p>
-				<p><a href="<?php echo esc_url( admin_url( 'options-general.php?page=connectors' ) ); ?>"><?php esc_html_e( 'Manage AI providers in Settings > Connectors', 'presscare-ai-error-doctor' ); ?></a></p>
+				<p><a href="<?php echo esc_url( admin_url( 'options-connectors.php' ) ); ?>"><?php esc_html_e( 'Manage AI providers in Settings > Connectors', 'presscare-ai-error-doctor' ); ?></a></p>
 			</div>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="pcaied_analyze">
