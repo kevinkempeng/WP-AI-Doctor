@@ -22,11 +22,13 @@ final class DiagnosticEngine {
 	private LogLocator $locator;
 	private LogParser $parser;
 	private Redactor $redactor;
+	private SiteHealthInspector $health;
 
-	public function __construct( LogLocator $locator, LogParser $parser, Redactor $redactor ) {
+	public function __construct( LogLocator $locator, LogParser $parser, Redactor $redactor, SiteHealthInspector $health ) {
 		$this->locator  = $locator;
 		$this->parser   = $parser;
 		$this->redactor = $redactor;
+		$this->health   = $health;
 	}
 
 	/**
@@ -50,6 +52,7 @@ final class DiagnosticEngine {
 			'report_id'    => wp_generate_uuid4(),
 			'generated_at' => gmdate( DATE_ATOM ),
 			'environment'  => $this->environment(),
+			'site_health'  => $this->health->inspect(),
 			'log'          => array(
 				'source'      => $located['source'],
 				'file'        => sanitize_file_name( basename( $located['path'] ) ),

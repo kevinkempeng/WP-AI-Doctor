@@ -248,6 +248,49 @@ final class AdminPageTest extends TestCase {
 		self::assertStringContainsString( 'not the complete raw log or its private server path', $html );
 	}
 
+	public function test_site_health_snapshot_is_read_only_and_avoids_alarmist_labels(): void {
+		$health = array(
+			'wordpress_version' => '7.0',
+			'php_version'       => '8.3',
+			'database_version'  => '8.0.36',
+			'web_server'        => 'nginx/1.26',
+			'multisite'         => false,
+			'object_cache'      => true,
+			'transients'        => array(
+				'count'         => 42,
+				'size_bytes'    => 4096,
+				'expired_count' => 3,
+				'available'     => true,
+			),
+			'autoload'          => array(
+				'count'        => 620,
+				'size_bytes'   => 920000,
+				'review_bytes' => 800000,
+				'status'       => 'review',
+				'available'    => true,
+				'largest'      => array(
+					array(
+						'name'       => 'woocommerce_helper_data',
+						'size_bytes' => 320000,
+					),
+				),
+			),
+		);
+
+		ob_start();
+		$this->invoke( 'render_site_health', array( $health ) );
+		$html = (string) ob_get_clean();
+
+		self::assertStringContainsString( 'Useful context before you change anything', $html );
+		self::assertStringContainsString( 'These figures are context—not errors', $html );
+		self::assertStringContainsString( 'Cleanup available', $html );
+		self::assertStringContainsString( 'Review recommended', $html );
+		self::assertStringContainsString( 'will not flush it', $html );
+		self::assertStringContainsString( 'Option values are never read into this report', $html );
+		self::assertStringNotContainsString( 'Clear All Transients', $html );
+		self::assertStringNotContainsString( 'Critical', $html );
+	}
+
 	public function test_support_options_keep_free_guidance_separate_from_advanced_care(): void {
 		ob_start();
 		$this->invoke( 'render_support_options', array() );

@@ -3,11 +3,11 @@ Tags: ai, debug, diagnostics, error log, site health
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.1.2
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Read-only WordPress error diagnostics with privacy-first, provider-independent AI explanations.
+Read-only WordPress error and site-health diagnostics with privacy-first, provider-independent AI explanations.
 
 == Description ==
 
@@ -23,6 +23,9 @@ The local diagnostic engine:
 * Treats old fatal records as neutral history instead of active critical problems.
 * Provides plain-language summaries, safe resolution steps, and collapsible technical evidence.
 * Explains where the PHP log comes from and offers a sanitized print view that can be saved as PDF.
+* Shows a read-only site snapshot with WordPress, PHP, database, web-server, transient, and autoloaded-option context.
+* Counts expired database-backed transients without deleting them or flushing an external object cache.
+* Lists the largest autoloaded option names and sizes without reading their values or changing their autoload state.
 * Lets administrators mark findings handled; newer occurrences automatically return to the action list.
 * Offers an optional PressCare support link for each sanitized finding ID.
 * Identifies likely plugin, theme, or WordPress core ownership from file paths.
@@ -77,11 +80,11 @@ The plugin checks these log locations in order:
 
 = Does the plugin change or repair my site? =
 
-No. The plugin is read-only. It reads a bounded section of a log, creates a sanitized report, and optionally asks a connected AI provider to explain that report.
+No. The plugin is read-only. It reads a bounded section of a log, runs bounded database aggregate queries for the site snapshot, creates a sanitized report, and optionally asks a connected AI provider to explain that report. It does not delete transients, flush caches, or change autoload settings.
 
 = Is an AI provider required? =
 
-No. Local parsing, grouping, redaction, component detection, JSON export, and reporting work without an AI provider.
+No. The site snapshot, local parsing, grouping, redaction, component detection, JSON export, and reporting work without an AI provider.
 
 = Does the optional AI explanation cost money? =
 
@@ -109,6 +112,10 @@ It counts only fatal errors with timestamps inside the current seven-day review 
 
 Yes. Choose View / save as PDF to open a print-friendly, sanitized report, then use the browser's Print or Save as PDF command. The document contains grouped sanitized examples, explanations, and next steps. It does not expose the complete raw log or its private server path.
 
+= Does the plugin clear expired transients or disable autoloaded options? =
+
+No. Version 1.2.0 reports database-backed transient and autoload totals for context. Expired transients are described as maintenance opportunities rather than critical errors. Option values are never included in the report, and no database or cache changes are offered.
+
 == Support ==
 
 After the plugin is listed, use its WordPress.org support forum for ordinary support and feature requests. For private or security-sensitive reports that should not include production logs or credentials, contact PressCare at https://presscare.com/contact/.
@@ -118,6 +125,15 @@ After the plugin is listed, use its WordPress.org support forum for ordinary sup
 The complete source code, build script, automated tests, and development documentation are maintained at https://github.com/kevinkempeng/WP-AI-Doctor.
 
 == Changelog ==
+
+= 1.2.0 =
+
+* Added a read-only site health snapshot available before an error-log scan.
+* Added WordPress, PHP, database, web-server, site-mode, and object-cache context.
+* Added database-backed transient totals, size, and expired-entry reporting without cleanup actions.
+* Added autoload totals, a cautious review level, and the largest option names and sizes without reading values.
+* Added clear guidance that these counts provide context and are not automatically errors.
+* Included snapshot facts in newly generated JSON and printable reports.
 
 = 1.1.2 =
 

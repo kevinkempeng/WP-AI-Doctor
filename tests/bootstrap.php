@@ -11,6 +11,10 @@ define( 'ABSPATH', '/var/www/example/public/' );
 define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content' );
 define( 'WP_PLUGIN_DIR', WP_CONTENT_DIR . '/plugins' );
 
+if ( ! defined( 'ARRAY_A' ) ) {
+	define( 'ARRAY_A', 'ARRAY_A' );
+}
+
 if ( ! function_exists( 'wp_normalize_path' ) ) {
 	function wp_normalize_path( string $path ): string {
 		return str_replace( '\\', '/', $path );
@@ -32,6 +36,45 @@ if ( ! function_exists( 'home_url' ) ) {
 if ( ! function_exists( 'sanitize_key' ) ) {
 	function sanitize_key( string $key ): string {
 		return strtolower( preg_replace( '/[^a-zA-Z0-9_-]/', '', $key ) ?? '' );
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	function sanitize_text_field( string $value ): string {
+		return trim( wp_strip_all_tags( $value ) );
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	function wp_unslash( string $value ): string {
+		return stripslashes( $value );
+	}
+}
+
+if ( ! function_exists( 'get_bloginfo' ) ) {
+	function get_bloginfo( string $field ): string {
+		return 'version' === $field ? '7.0' : '';
+	}
+}
+
+if ( ! function_exists( 'is_multisite' ) ) {
+	function is_multisite(): bool {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_using_ext_object_cache' ) ) {
+	function wp_using_ext_object_cache(): bool {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_autoload_values_to_autoload' ) ) {
+	/**
+	 * @return string[]
+	 */
+	function wp_autoload_values_to_autoload(): array {
+		return array( 'yes', 'on', 'auto-on', 'auto' );
 	}
 }
 
@@ -127,5 +170,6 @@ if ( ! function_exists( 'get_option' ) ) {
 
 require_once dirname( __DIR__ ) . '/src/Privacy/Redactor.php';
 require_once dirname( __DIR__ ) . '/src/Diagnostics/LogParser.php';
+require_once dirname( __DIR__ ) . '/src/Diagnostics/SiteHealthInspector.php';
 require_once dirname( __DIR__ ) . '/src/AI/Analyzer.php';
 require_once dirname( __DIR__ ) . '/src/Admin/AdminPage.php';

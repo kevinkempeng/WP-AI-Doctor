@@ -14,6 +14,7 @@ use PressCare\AIErrorDoctor\AI\Analyzer;
 use PressCare\AIErrorDoctor\Diagnostics\DiagnosticEngine;
 use PressCare\AIErrorDoctor\Diagnostics\LogLocator;
 use PressCare\AIErrorDoctor\Diagnostics\LogParser;
+use PressCare\AIErrorDoctor\Diagnostics\SiteHealthInspector;
 use PressCare\AIErrorDoctor\Privacy\Policy;
 use PressCare\AIErrorDoctor\Privacy\Redactor;
 
@@ -34,13 +35,15 @@ final class Plugin {
 
 	public function boot(): void {
 		$redactor = new Redactor();
+		$health   = new SiteHealthInspector();
 		$engine   = new DiagnosticEngine(
 			new LogLocator(),
 			new LogParser( $redactor ),
-			$redactor
+			$redactor,
+			$health
 		);
 
-		$admin = new AdminPage( $engine, new Analyzer( $redactor ), $redactor );
+		$admin = new AdminPage( $engine, new Analyzer( $redactor ), $redactor, $health );
 		$admin->register_hooks();
 
 		$policy = new Policy();

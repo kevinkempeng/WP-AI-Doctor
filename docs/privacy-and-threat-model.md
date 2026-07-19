@@ -10,7 +10,7 @@
 - Passwords and values labeled as keys, secrets, authentication, or authorization data.
 - Raw error-log content.
 
-## Controls in version 1.1.2
+## Controls in version 1.2.0
 
 - Reads no more than 2 MB from the end of a local file.
 - Never accepts a log path from an HTTP request.
@@ -27,6 +27,9 @@
 - Contacts PressCare only after an administrator explicitly clicks a support link; the URL contains only the sanitized finding ID, severity, and component slug.
 - Stores only a finding fingerprint and handled timestamp when an administrator organizes the action list.
 - Generates the printable/PDF-ready view only from the stored sanitized report and never exposes the raw log path.
+- Uses aggregate database queries for transient and autoload totals; it does not load transient values or autoloaded option values into the report.
+- Stores only the names and byte sizes of up to ten large autoloaded options for local investigation.
+- Never deletes transients, changes an option's autoload state, or flushes an external object cache.
 - Uses WordPress Connectors for provider credential management.
 - Does not include a file editor, command runner, automated repair, or executable AI tool.
 

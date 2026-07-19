@@ -2,6 +2,16 @@
 
 All notable changes to PressCare AI Error Doctor are documented here.
 
+## 1.2.0 - 2026-07-18
+
+- Added an original, read-only site health snapshot that remains available before an error-log scan.
+- Added WordPress, PHP, database, web-server, site-mode, and external-object-cache context.
+- Added database-backed transient totals, size, and expired-entry reporting without deleting or flushing anything.
+- Added autoloaded-option totals, a cautious 800 KB review level, and a size-ranked list of option names without reading option values.
+- Added explicit non-alarmist guidance explaining that counts are context rather than errors.
+- Included the site snapshot in sanitized JSON and printable reports created by a new scan.
+- Kept maintenance separate: the plugin still cannot delete transients, alter autoload settings, flush caches, or repair the database.
+
 ## 1.1.2 - 2026-07-18
 
 - Changed the summary metrics to count only events from the current seven-day review window.

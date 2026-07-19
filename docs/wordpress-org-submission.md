@@ -1,10 +1,10 @@
 # WordPress.org Submission
 
-This project is prepared for submission as **PressCare AI Error Doctor 1.1.2**.
+This project is prepared for submission as **PressCare AI Error Doctor 1.2.0**.
 
 ## Submission files
 
-- Upload `dist/presscare-ai-error-doctor-1.1.2.zip` for initial review.
+- Upload `dist/presscare-ai-error-doctor-1.2.0.zip` for initial review.
 - Keep the files in `.wordpress-org/` ready for the WordPress.org SVN `assets/` directory after approval.
 - Request the slug `presscare-ai-error-doctor` and verify it before accepting the final directory name.
 
@@ -21,8 +21,8 @@ This project is prepared for submission as **PressCare AI Error Doctor 1.1.2**.
 1. Check out the assigned WordPress.org SVN repository.
 2. Copy the release files into `trunk/`.
 3. Copy the PNG files from `.wordpress-org/` into the SVN `assets/` directory.
-4. Copy the release files into `tags/1.1.2/`.
-5. Verify that `Stable tag: 1.1.2` matches the plugin header version and SVN tag.
+4. Copy the release files into `tags/1.2.0/`.
+5. Verify that `Stable tag: 1.2.0` matches the plugin header version and SVN tag.
 6. Commit only when the public release is ready; the first SVN commit makes the plugin live.
 
 ## Official references
