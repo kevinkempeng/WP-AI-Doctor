@@ -6,13 +6,14 @@ AI interprets evidence; it does not collect facts or change the site. The determ
 
 ## Data flow
 
-1. `LogLocator` resolves an explicitly configured local log and reads at most its final 2 MB.
-2. `LogParser` extracts recognized events, classifies severity, detects component ownership, and groups repeated messages by a stable fingerprint.
-3. `Redactor` replaces common paths, site URLs, email addresses, IP addresses, bearer tokens, API keys, JWTs, and named secret values.
-4. `DiagnosticEngine` builds a bounded report and applies redaction again after the extension filter.
-5. `AdminPage` stores the sanitized local report in user metadata for the administrator who requested it.
-6. Only after explicit consent, `Analyzer` sends the environment summary and grouped sanitized samples through WordPress Core's provider-independent AI Client.
-7. The AI Client routes the request to a compatible provider configured by the site owner. The plugin never receives or stores that provider's API key.
+1. `SiteHealthInspector` uses bounded, read-only aggregate queries to collect environment, transient, and autoload context without reading option values or changing the database.
+2. `LogLocator` resolves an explicitly configured local log and reads at most its final 2 MB.
+3. `LogParser` extracts recognized events, classifies severity, detects component ownership, and groups repeated messages by a stable fingerprint.
+4. `Redactor` replaces common paths, site URLs, email addresses, IP addresses, bearer tokens, API keys, JWTs, and named secret values.
+5. `DiagnosticEngine` builds a bounded report and applies redaction again after the extension filter.
+6. `AdminPage` stores the sanitized local report in user metadata for the administrator who requested it.
+7. Only after explicit consent, `Analyzer` sends the environment summary and grouped sanitized samples through WordPress Core's provider-independent AI Client. The separate site-health block is not included in that payload.
+8. The AI Client routes the request to a compatible provider configured by the site owner. The plugin never receives or stores that provider's API key.
 
 ## Trust boundaries
 
@@ -34,4 +35,3 @@ AI interprets evidence; it does not collect facts or change the site. The determ
 - Recurrence tracking without retaining raw logs.
 - Testable provider-independent evaluation cases.
 - Multisite-aware network summaries.
-

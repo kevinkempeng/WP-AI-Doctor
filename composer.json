@@ -1,6 +1,6 @@
 {
   "name": "presscare/presscare-ai-error-doctor",
-  "description": "Read-only WordPress error diagnostics with privacy-first, provider-independent AI explanations.",
+  "description": "Read-only WordPress error and site-health diagnostics with privacy-first, provider-independent AI explanations.",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "authors": [

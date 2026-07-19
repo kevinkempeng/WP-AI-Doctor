@@ -5,7 +5,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_name="$(basename "$project_dir")"
 dist_dir="$project_dir/dist"
-output="$dist_dir/${project_name}-1.1.2.zip"
+output="$dist_dir/${project_name}-1.2.0.zip"
 
 mkdir -p "$dist_dir"
 rm -f "$output"

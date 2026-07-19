@@ -486,6 +486,201 @@
 	margin: 0;
 }
 
+.pcaied-site-health {
+	background: linear-gradient(145deg, #fff, #f7f8fd 70%);
+}
+
+.pcaied-health-heading,
+.pcaied-health-card-heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 22px;
+}
+
+.pcaied-health-heading {
+	align-items: center;
+}
+
+.pcaied-health-badges {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 10px;
+	margin-top: 23px;
+}
+
+.pcaied-health-badges > div {
+	min-width: 0;
+	padding: 13px 14px;
+	border: 1px solid #dfe3ee;
+	border-radius: 10px;
+	background: #fff;
+}
+
+.pcaied-health-badges strong,
+.pcaied-health-badges span {
+	display: block;
+}
+
+.pcaied-health-badges strong {
+	color: var(--pcaied-purple-dark);
+	font-size: 11px;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.pcaied-health-badges span {
+	overflow: hidden;
+	margin-top: 5px;
+	color: var(--pcaied-text);
+	font-size: 13px;
+	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.pcaied-health-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+	margin-top: 14px;
+}
+
+.pcaied-health-card {
+	min-width: 0;
+	padding: 23px;
+	border: 1px solid #dfe3ee;
+	border-radius: 14px;
+	background: #fff;
+}
+
+.pcaied-health-card h3 {
+	margin: 5px 0 0;
+	font-size: 20px;
+}
+
+.pcaied-health-card > p:not(.pcaied-section-kicker) {
+	color: var(--pcaied-muted);
+	line-height: 1.55;
+}
+
+.pcaied-health-status {
+	flex: 0 0 auto;
+	padding: 6px 9px;
+	border-radius: 999px;
+	font-size: 10px;
+	font-weight: 850;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.pcaied-health-status-normal {
+	background: #def8ed;
+	color: #00694d;
+}
+
+.pcaied-health-status-review {
+	background: #eee9ff;
+	color: #4c32b8;
+}
+
+.pcaied-health-stats {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+	margin: 18px 0;
+}
+
+.pcaied-health-stats > div {
+	min-width: 0;
+	padding: 12px;
+	border-radius: 10px;
+	background: #f5f7fb;
+}
+
+.pcaied-health-stats strong,
+.pcaied-health-stats span {
+	display: block;
+}
+
+.pcaied-health-stats strong {
+	font-size: 20px;
+	letter-spacing: -0.02em;
+}
+
+.pcaied-health-stats span {
+	margin-top: 5px;
+	color: var(--pcaied-muted);
+	font-size: 11px;
+	line-height: 1.3;
+}
+
+.pcaied-health-card .pcaied-health-guidance {
+	margin: 15px 0 0;
+	padding: 12px 13px;
+	border-left: 3px solid var(--pcaied-purple);
+	border-radius: 7px;
+	background: #f3f0ff;
+	color: #453495;
+	font-size: 12px;
+}
+
+.pcaied-health-card .pcaied-health-guidance-clear {
+	border-left-color: var(--pcaied-green);
+	background: #effbf7;
+	color: #00694d;
+}
+
+.pcaied-health-card .pcaied-health-footnote {
+	margin: 10px 0 0;
+	font-size: 11px;
+}
+
+.pcaied-health-options {
+	margin-top: 16px;
+	padding-top: 14px;
+	border-top: 1px solid #e5e8f1;
+}
+
+.pcaied-health-options summary {
+	cursor: pointer;
+	color: var(--pcaied-purple-dark);
+	font-weight: 750;
+}
+
+.pcaied-health-options > p {
+	color: var(--pcaied-muted);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.pcaied-health-option-list {
+	display: grid;
+	gap: 6px;
+}
+
+.pcaied-health-option-list > div {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 9px 10px;
+	border-radius: 7px;
+	background: #f5f7fb;
+}
+
+.pcaied-health-option-list code {
+	overflow-wrap: anywhere;
+	font-size: 11px;
+}
+
+.pcaied-health-option-list span {
+	flex: 0 0 auto;
+	color: var(--pcaied-muted);
+	font-size: 11px;
+	font-weight: 700;
+}
+
 .pcaied-section-heading {
 	display: flex;
 	align-items: flex-start;
@@ -1429,6 +1624,15 @@
 		grid-template-columns: 1fr;
 	}
 
+	.pcaied-health-heading {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.pcaied-health-badges {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
 	.pcaied-report-flow {
 		justify-content: flex-start;
 	}
@@ -1501,6 +1705,10 @@
 		grid-template-columns: 1fr;
 	}
 
+	.pcaied-health-grid {
+		grid-template-columns: 1fr;
+	}
+
 	.pcaied-presscare-ai {
 		grid-template-columns: 1fr;
 	}
@@ -1513,7 +1721,9 @@
 @media (max-width: 430px) {
 	.pcaied-metrics,
 	.pcaied-meta,
-	.pcaied-focus-summary {
+	.pcaied-focus-summary,
+	.pcaied-health-badges,
+	.pcaied-health-stats {
 		grid-template-columns: 1fr;
 	}
 

@@ -11,6 +11,7 @@ namespace PressCare\AIErrorDoctor\Admin;
 
 use PressCare\AIErrorDoctor\AI\Analyzer;
 use PressCare\AIErrorDoctor\Diagnostics\DiagnosticEngine;
+use PressCare\AIErrorDoctor\Diagnostics\SiteHealthInspector;
 use PressCare\AIErrorDoctor\Privacy\Redactor;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,11 +27,13 @@ final class AdminPage {
 	private DiagnosticEngine $engine;
 	private Analyzer $analyzer;
 	private Redactor $redactor;
+	private SiteHealthInspector $health;
 
-	public function __construct( DiagnosticEngine $engine, Analyzer $analyzer, Redactor $redactor ) {
+	public function __construct( DiagnosticEngine $engine, Analyzer $analyzer, Redactor $redactor, SiteHealthInspector $health ) {
 		$this->engine   = $engine;
 		$this->analyzer = $analyzer;
 		$this->redactor = $redactor;
+		$this->health   = $health;
 	}
 
 	public function register_hooks(): void {
@@ -79,6 +82,7 @@ final class AdminPage {
 		$ai_report = is_array( $ai_report ) ? $this->sanitize_saved_report( $ai_report, self::AI_META ) : array();
 		$handled   = get_user_meta( $user_id, self::HANDLED_META, true );
 		$handled   = is_array( $handled ) ? $handled : array();
+		$health    = $this->health->inspect();
 		?>
 		<div class="wrap pcaied-wrap">
 			<section class="pcaied-hero">
@@ -121,6 +125,8 @@ final class AdminPage {
 					<?php endif; ?>
 				</div>
 			</section>
+
+			<?php $this->render_site_health( $health ); ?>
 
 			<?php if ( $report ) : ?>
 				<?php $this->render_summary( $report ); ?>
@@ -411,6 +417,120 @@ final class AdminPage {
 		<?php
 	}
 
+	/**
+	 * @param array<string,mixed> $health Read-only site health facts.
+	 */
+	private function render_site_health( array $health ): void {
+		$transients       = isset( $health['transients'] ) && is_array( $health['transients'] ) ? $health['transients'] : array();
+		$autoload         = isset( $health['autoload'] ) && is_array( $health['autoload'] ) ? $health['autoload'] : array();
+		$transient_ready  = ! empty( $transients['available'] );
+		$autoload_ready   = ! empty( $autoload['available'] );
+		$expired_count    = max( 0, (int) ( $transients['expired_count'] ?? 0 ) );
+		$autoload_bytes   = max( 0, (int) ( $autoload['size_bytes'] ?? 0 ) );
+		$autoload_review  = max( 1, (int) ( $autoload['review_bytes'] ?? 800000 ) );
+		$autoload_status  = sanitize_key( (string) ( $autoload['status'] ?? 'unavailable' ) );
+		$autoload_largest = isset( $autoload['largest'] ) && is_array( $autoload['largest'] ) ? array_values( array_filter( $autoload['largest'], 'is_array' ) ) : array();
+		$object_cache     = ! empty( $health['object_cache'] );
+		$is_multisite     = ! empty( $health['multisite'] );
+		?>
+		<section class="pcaied-panel pcaied-site-health" aria-labelledby="pcaied-site-health-title">
+			<header class="pcaied-health-heading">
+				<div class="pcaied-section-copy">
+					<p class="pcaied-section-kicker"><?php esc_html_e( 'Read-only site snapshot', 'presscare-ai-error-doctor' ); ?></p>
+					<h2 id="pcaied-site-health-title"><?php esc_html_e( 'Useful context before you change anything', 'presscare-ai-error-doctor' ); ?></h2>
+					<p><?php esc_html_e( 'These figures are context—not errors. AI Error Doctor reads versions and database totals, but it does not delete transients, change autoload settings, flush caches, or repair the database.', 'presscare-ai-error-doctor' ); ?></p>
+				</div>
+				<a class="button" href="<?php echo esc_url( admin_url( 'site-health.php' ) ); ?>"><?php esc_html_e( 'Open WordPress Site Health', 'presscare-ai-error-doctor' ); ?></a>
+			</header>
+
+			<div class="pcaied-health-badges" aria-label="<?php esc_attr_e( 'Server environment', 'presscare-ai-error-doctor' ); ?>">
+				<?php $this->health_badge( __( 'WordPress', 'presscare-ai-error-doctor' ), (string) ( $health['wordpress_version'] ?? '' ) ); ?>
+				<?php $this->health_badge( __( 'PHP', 'presscare-ai-error-doctor' ), (string) ( $health['php_version'] ?? '' ) ); ?>
+				<?php $this->health_badge( __( 'Database', 'presscare-ai-error-doctor' ), (string) ( $health['database_version'] ?? '' ) ); ?>
+				<?php $this->health_badge( __( 'Web server', 'presscare-ai-error-doctor' ), (string) ( $health['web_server'] ?? '' ) ); ?>
+				<?php $this->health_badge( __( 'Site mode', 'presscare-ai-error-doctor' ), $is_multisite ? __( 'Multisite', 'presscare-ai-error-doctor' ) : __( 'Single site', 'presscare-ai-error-doctor' ) ); ?>
+			</div>
+
+			<div class="pcaied-health-grid">
+				<article class="pcaied-health-card">
+					<div class="pcaied-health-card-heading">
+						<div>
+							<p class="pcaied-section-kicker"><?php esc_html_e( 'Temporary database cache', 'presscare-ai-error-doctor' ); ?></p>
+							<h3><?php esc_html_e( 'Transients', 'presscare-ai-error-doctor' ); ?></h3>
+						</div>
+						<span class="pcaied-health-status <?php echo esc_attr( $transient_ready && $expired_count > 0 ? 'pcaied-health-status-review' : 'pcaied-health-status-normal' ); ?>">
+							<?php echo esc_html( $transient_ready && $expired_count > 0 ? __( 'Cleanup available', 'presscare-ai-error-doctor' ) : ( $transient_ready ? __( 'No expired entries', 'presscare-ai-error-doctor' ) : __( 'Unavailable', 'presscare-ai-error-doctor' ) ) ); ?>
+						</span>
+					</div>
+					<p><?php esc_html_e( 'WordPress and extensions use transients for temporary cached data. A large total does not automatically mean something is wrong.', 'presscare-ai-error-doctor' ); ?></p>
+					<div class="pcaied-health-stats">
+						<div><strong><?php echo esc_html( $transient_ready ? (string) max( 0, (int) ( $transients['count'] ?? 0 ) ) : '—' ); ?></strong><span><?php esc_html_e( 'Stored transients', 'presscare-ai-error-doctor' ); ?></span></div>
+						<div><strong><?php echo esc_html( $transient_ready ? size_format( max( 0, (int) ( $transients['size_bytes'] ?? 0 ) ) ) : '—' ); ?></strong><span><?php esc_html_e( 'Database size', 'presscare-ai-error-doctor' ); ?></span></div>
+						<div><strong><?php echo esc_html( $transient_ready ? (string) $expired_count : '—' ); ?></strong><span><?php esc_html_e( 'Expired', 'presscare-ai-error-doctor' ); ?></span></div>
+					</div>
+					<?php if ( $transient_ready && $expired_count > 0 ) : ?>
+						<p class="pcaied-health-guidance"><?php esc_html_e( 'Expired entries are maintenance opportunities, not urgent errors. A future PressCare maintenance tool can remove only expired entries with confirmation and a recorded result.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php elseif ( $transient_ready ) : ?>
+						<p class="pcaied-health-guidance pcaied-health-guidance-clear"><?php esc_html_e( 'No expired database-backed transients were detected. No cleanup is recommended from this snapshot.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php else : ?>
+						<p class="pcaied-health-guidance"><?php esc_html_e( 'The database did not return transient totals. The rest of the diagnostic report can still be used.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php endif; ?>
+					<?php if ( $object_cache ) : ?>
+						<p class="pcaied-health-footnote"><?php esc_html_e( 'An external object cache is active. These database figures do not represent everything stored by that cache, and AI Error Doctor will not flush it.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php endif; ?>
+					<?php if ( $is_multisite ) : ?>
+						<p class="pcaied-health-footnote"><?php esc_html_e( 'On Multisite, this card covers the current site’s options table and does not claim to be a network-wide total.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php endif; ?>
+				</article>
+
+				<article class="pcaied-health-card">
+					<div class="pcaied-health-card-heading">
+						<div>
+							<p class="pcaied-section-kicker"><?php esc_html_e( 'Loaded on most requests', 'presscare-ai-error-doctor' ); ?></p>
+							<h3><?php esc_html_e( 'Autoloaded options', 'presscare-ai-error-doctor' ); ?></h3>
+						</div>
+						<span class="pcaied-health-status <?php echo esc_attr( 'review' === $autoload_status ? 'pcaied-health-status-review' : 'pcaied-health-status-normal' ); ?>">
+							<?php echo esc_html( $autoload_ready ? ( 'review' === $autoload_status ? __( 'Review recommended', 'presscare-ai-error-doctor' ) : __( 'Within review level', 'presscare-ai-error-doctor' ) ) : __( 'Unavailable', 'presscare-ai-error-doctor' ) ); ?>
+						</span>
+					</div>
+					<p><?php esc_html_e( 'Autoloaded options are fetched during most WordPress requests. This report uses a cautious size threshold to suggest review; it never changes an option.', 'presscare-ai-error-doctor' ); ?></p>
+					<div class="pcaied-health-stats">
+						<div><strong><?php echo esc_html( $autoload_ready ? (string) max( 0, (int) ( $autoload['count'] ?? 0 ) ) : '—' ); ?></strong><span><?php esc_html_e( 'Autoloaded options', 'presscare-ai-error-doctor' ); ?></span></div>
+						<div><strong><?php echo esc_html( $autoload_ready ? size_format( $autoload_bytes ) : '—' ); ?></strong><span><?php esc_html_e( 'Total size', 'presscare-ai-error-doctor' ); ?></span></div>
+						<div><strong><?php echo esc_html( $autoload_ready ? size_format( $autoload_review ) : '—' ); ?></strong><span><?php esc_html_e( 'Review level', 'presscare-ai-error-doctor' ); ?></span></div>
+					</div>
+					<?php if ( $autoload_ready && 'review' === $autoload_status ) : ?>
+						<p class="pcaied-health-guidance"><?php esc_html_e( 'The total is above this report’s review level. Identify ownership and test changes on staging; never disable an option only because it is large.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php elseif ( $autoload_ready ) : ?>
+						<p class="pcaied-health-guidance pcaied-health-guidance-clear"><?php esc_html_e( 'The total is below this report’s review level. Individual entries can still be inspected for context without changing them.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php else : ?>
+						<p class="pcaied-health-guidance"><?php esc_html_e( 'The database did not return autoload totals. No options were changed.', 'presscare-ai-error-doctor' ); ?></p>
+					<?php endif; ?>
+
+					<?php if ( $autoload_largest ) : ?>
+						<details class="pcaied-health-options">
+							<summary><?php esc_html_e( 'View the largest autoloaded option names', 'presscare-ai-error-doctor' ); ?></summary>
+							<p><?php esc_html_e( 'Names and sizes are shown for investigation. Option values are never read into this report.', 'presscare-ai-error-doctor' ); ?></p>
+							<div class="pcaied-health-option-list">
+								<?php foreach ( $autoload_largest as $option ) : ?>
+									<div><code><?php echo esc_html( (string) ( $option['name'] ?? '' ) ); ?></code><span><?php echo esc_html( size_format( max( 0, (int) ( $option['size_bytes'] ?? 0 ) ) ) ); ?></span></div>
+								<?php endforeach; ?>
+							</div>
+						</details>
+					<?php endif; ?>
+				</article>
+			</div>
+		</section>
+		<?php
+	}
+
+	private function health_badge( string $label, string $value ): void {
+		$value = '' !== trim( $value ) ? $value : __( 'Not reported', 'presscare-ai-error-doctor' );
+		?>
+		<div><strong><?php echo esc_html( $label ); ?></strong><span><?php echo esc_html( $value ); ?></span></div>
+		<?php
+	}
+
 	private function log_source_description( string $source ): string {
 		$descriptions = array(
 			'WP_DEBUG_LOG'    => __( 'WordPress debug log configured by WP_DEBUG_LOG', 'presscare-ai-error-doctor' ),
@@ -427,6 +547,9 @@ final class AdminPage {
 	private function render_printable_document( array $report ): void {
 		$summary          = isset( $report['summary'] ) && is_array( $report['summary'] ) ? $report['summary'] : array();
 		$groups           = isset( $report['groups'] ) && is_array( $report['groups'] ) ? array_values( array_filter( $report['groups'], 'is_array' ) ) : array();
+		$health           = isset( $report['site_health'] ) && is_array( $report['site_health'] ) ? $report['site_health'] : array();
+		$transients       = isset( $health['transients'] ) && is_array( $health['transients'] ) ? $health['transients'] : array();
+		$autoload         = isset( $health['autoload'] ) && is_array( $health['autoload'] ) ? $health['autoload'] : array();
 		$window_days      = (int) ( $summary['recency_window_days'] ?? 7 );
 		$current_counts   = $this->current_severity_counts( $report );
 		$current_critical = array();
@@ -466,10 +589,11 @@ final class AdminPage {
 				.toolbar { display: flex; justify-content: space-between; gap: 16px; margin: 16px 0; padding: 14px 16px; border-radius: 12px; background: #fff; }
 				button { padding: 9px 14px; border: 0; border-radius: 8px; background: #5033c7; color: #fff; cursor: pointer; font-weight: 750; }
 				.panel { margin: 16px 0; padding: 24px; border: 1px solid #dfe3ed; border-radius: 15px; background: #fff; }
-				.origin { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-				.origin div, .metric { padding: 13px; border-radius: 10px; background: #f5f7fb; }
-				.origin strong, .origin span { display: block; }
-				.origin span { margin-top: 5px; color: #60677d; font-size: 13px; }
+				.origin, .snapshot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+				.snapshot { grid-template-columns: repeat(5, 1fr); }
+				.origin div, .snapshot div, .metric { padding: 13px; border-radius: 10px; background: #f5f7fb; }
+				.origin strong, .origin span, .snapshot strong, .snapshot span { display: block; }
+				.origin span, .snapshot span { margin-top: 5px; color: #60677d; font-size: 13px; }
 				.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 				.metric strong, .metric span { display: block; }
 				.metric strong { font-size: 26px; }
@@ -489,7 +613,7 @@ final class AdminPage {
 				.finding li { margin-bottom: 6px; line-height: 1.5; }
 				.finding pre { overflow-wrap: anywhere; padding: 13px; border-radius: 8px; background: #f4f6fa; white-space: pre-wrap; font-size: 11px; line-height: 1.55; }
 				.meta { color: #737a8e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-				@media (max-width: 700px) { .origin, .metrics { grid-template-columns: 1fr 1fr; } .toolbar { align-items: flex-start; flex-direction: column; } }
+				@media (max-width: 700px) { .origin, .snapshot, .metrics { grid-template-columns: 1fr 1fr; } .toolbar { align-items: flex-start; flex-direction: column; } }
 				@media print { body { background: #fff; } main { width: 100%; margin: 0; } .hero { border-radius: 0; } .toolbar button { display: none; } .panel, .finding { box-shadow: none; } }
 			</style>
 		</head>
@@ -514,6 +638,22 @@ final class AdminPage {
 					<div><strong><?php esc_html_e( 'Translated amount', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( size_format( (int) ( $report['log']['bytes_read'] ?? 0 ) ) ); ?></span></div>
 				</div>
 			</section>
+			<?php if ( $health ) : ?>
+				<section class="panel">
+					<h2><?php esc_html_e( 'Read-only site snapshot', 'presscare-ai-error-doctor' ); ?></h2>
+					<p><?php esc_html_e( 'These figures provide context for the error report. They are not errors, and generating this document did not clear a cache or change the database.', 'presscare-ai-error-doctor' ); ?></p>
+					<div class="snapshot">
+						<div><strong><?php esc_html_e( 'WordPress', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( (string) ( $health['wordpress_version'] ?? __( 'Not reported', 'presscare-ai-error-doctor' ) ) ); ?></span></div>
+						<div><strong><?php esc_html_e( 'PHP', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( (string) ( $health['php_version'] ?? __( 'Not reported', 'presscare-ai-error-doctor' ) ) ); ?></span></div>
+						<div><strong><?php esc_html_e( 'Database', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( (string) ( $health['database_version'] ?? __( 'Not reported', 'presscare-ai-error-doctor' ) ) ); ?></span></div>
+						<div><strong><?php esc_html_e( 'Transients', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( (string) ( $transients['count'] ?? 0 ) . ' · ' . size_format( (int) ( $transients['size_bytes'] ?? 0 ) ) ); ?></span></div>
+						<div><strong><?php esc_html_e( 'Expired', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( (string) ( $transients['expired_count'] ?? 0 ) ); ?></span></div>
+						<div><strong><?php esc_html_e( 'Autoloaded options', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( (string) ( $autoload['count'] ?? 0 ) ); ?></span></div>
+						<div><strong><?php esc_html_e( 'Autoload size', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( size_format( (int) ( $autoload['size_bytes'] ?? 0 ) ) ); ?></span></div>
+						<div><strong><?php esc_html_e( 'Object cache', 'presscare-ai-error-doctor' ); ?></strong><span><?php echo esc_html( ! empty( $health['object_cache'] ) ? __( 'External cache active', 'presscare-ai-error-doctor' ) : __( 'Database-backed', 'presscare-ai-error-doctor' ) ); ?></span></div>
+					</div>
+				</section>
+			<?php endif; ?>
 			<section class="panel">
 				<div class="metrics">
 					<div class="metric"><strong><?php echo esc_html( (string) $current_counts['critical'] ); ?></strong><span><?php esc_html_e( 'Current critical events', 'presscare-ai-error-doctor' ); ?></span></div>
@@ -551,7 +691,11 @@ final class AdminPage {
 					<h3><?php echo esc_html( $this->finding_title( $group ) ); ?></h3>
 					<p><?php echo esc_html( $this->finding_explanation( $group, $window_days ) ); ?></p>
 					<h4><?php esc_html_e( 'Recommended next steps', 'presscare-ai-error-doctor' ); ?></h4>
-					<ol><?php foreach ( $this->resolution_steps( $group ) as $step ) : ?><li><?php echo esc_html( $step ); ?></li><?php endforeach; ?></ol>
+					<ol>
+						<?php foreach ( $this->resolution_steps( $group ) as $step ) : ?>
+							<li><?php echo esc_html( $step ); ?></li>
+						<?php endforeach; ?>
+					</ol>
 					<h4><?php esc_html_e( 'Sanitized technical example', 'presscare-ai-error-doctor' ); ?></h4>
 					<pre><?php echo esc_html( (string) ( $group['sample'] ?? '' ) ); ?></pre>
 					<?php /* translators: 1: Sanitized finding ID, 2: Number of occurrences. */ ?>
@@ -867,6 +1011,8 @@ final class AdminPage {
 		$undated_label = sprintf( __( '%d undated', 'presscare-ai-error-doctor' ), $undated_count );
 		/* translators: %s: Date when the finding last occurred. */
 		$last_seen_label = sprintf( __( 'Last seen %s', 'presscare-ai-error-doctor' ), $this->format_timestamp( $group['last_seen'] ?? null, true ) );
+
+		$resolution_hidden = $is_active_fatal ? '' : ' hidden';
 		?>
 		<article id="<?php echo esc_attr( $finding_id ); ?>" class="pcaied-finding pcaied-finding-<?php echo esc_attr( $priority['key'] ); ?> pcaied-finding-severity-<?php echo esc_attr( $severity_style ); ?>" tabindex="-1">
 			<div class="pcaied-finding-heading">
@@ -909,7 +1055,7 @@ final class AdminPage {
 					<button type="submit" class="button pcaied-handle-button"><?php echo esc_html( $handled ? __( 'Return to review', 'presscare-ai-error-doctor' ) : __( 'Mark handled', 'presscare-ai-error-doctor' ) ); ?></button>
 				</form>
 			</div>
-			<div id="<?php echo esc_attr( $resolution_id ); ?>" class="pcaied-resolution"<?php if ( ! $is_active_fatal ) : ?> hidden<?php endif; ?>>
+			<div id="<?php echo esc_attr( $resolution_id ); ?>" class="pcaied-resolution"<?php echo esc_attr( $resolution_hidden ); ?>>
 				<h5><?php echo esc_html( $is_active_fatal ? __( 'How to handle it safely', 'presscare-ai-error-doctor' ) : __( 'A safe path toward resolution', 'presscare-ai-error-doctor' ) ); ?></h5>
 				<ol>
 					<?php foreach ( $this->resolution_steps( $group ) as $step ) : ?>
